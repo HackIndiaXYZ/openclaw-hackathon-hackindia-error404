@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #6366f1;
+  --color-brand-secondary: #10b981;
+  --color-glass-white: rgba(255, 255, 255, 0.7);
+  --color-glass-dark: rgba(17, 24, 39, 0.7);
+  
+  --font-inter: "Inter", sans-serif;
+  --font-outfit: "Outfit", sans-serif;
+}
+
+:root {
+  background: radial-gradient(circle at top right, #f5f3ff, #ffffff);
+  min-height: 100vh;
+  font-family: var(--font-inter);
+}
+
+@layer base {
+  body {
+    @apply antialiased text-slate-900 selection:bg-indigo-100;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-xl rounded-2xl;
+  }
+  
+  .glass-nav {
+    @apply backdrop-blur-lg bg-white/80 border-b border-gray-200/50 sticky top-0 z-50;
+  }
+  
+  .btn-primary {
+    @apply px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-medium transition-all hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 active:scale-95 flex items-center gap-2;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-medium transition-all hover:bg-slate-50 active:scale-95 flex items-center gap-2;
+  }
+
+  .nav-link {
+    @apply px-4 py-2 text-slate-600 hover:text-indigo-600 transition-colors relative font-medium;
+  }
+
+  .nav-link-active {
+    @apply text-indigo-600 after:content-[''] after:absolute after:bottom-0 after:left-4 after:right-4 after:h-0.5 after:bg-indigo-600 after:rounded-full;
+  }
+}
