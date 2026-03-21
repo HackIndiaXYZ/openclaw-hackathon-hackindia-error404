@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/openclaw-hackathon-hackindia-error404/',
+  base: '/',
   plugins: [
     react(),
     tailwindcss(),

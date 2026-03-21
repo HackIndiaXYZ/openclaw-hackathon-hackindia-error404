@@ -15,157 +15,97 @@ EduSync solves this by building a **federated, multi-campus collaboration platfo
 ## PART 2: SYSTEM ARCHITECTURE (Production-Grade)
 
 ### 2.1 High-Level Architecture Diagram
+The system uses a **hybrid microservices** approach. Core services (Profile, Skill, Resource, Karma) are logically separated. The Nexus layer (cross-campus services) is separate to allow different college groups to deploy their own instances.
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        CLIENT TIER                                   │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
-│  │  Web App      │  │  Mobile PWA  │  │  Admin Panel │              │
-│  │  (Next.js 15) │  │  (React      │  │  (Next.js    │              │
-│  │  App Router)  │  │   Native)    │  │   Dashboard) │              │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘              │
-│         │                  │                  │                       │
-│         └──────────────────┼──────────────────┘                      │
-│                            │                                          │
-│                    ┌───────▼────────┐                                 │
-│                    │  API Gateway   │                                 │
-│                    │  (Kong / AWS   │                                 │
-│                    │   API Gateway) │                                 │
-│                    └───────┬────────┘                                 │
-└────────────────────────────┼─────────────────────────────────────────┘
-                             │
-┌────────────────────────────┼─────────────────────────────────────────┐
-│                    APPLICATION TIER                                    │
-│                             │                                          │
-│    ┌────────────────────────┼────────────────────────────┐           │
-│    │                        │                             │           │
-│    ▼                        ▼                             ▼           │
-│ ┌──────────┐  ┌──────────────────┐  ┌──────────────────────┐        │
-│ │ AUTH      │  │ CORE SERVICES    │  │ NEXUS SERVICES       │        │
-│ │ SERVICE   │  │                  │  │ (Cross-Campus)       │        │
-│ │          │  │ • Profile Svc    │  │                      │        │
-│ │ • Fed.   │  │ • Skill Svc      │  │ • Campus Registry    │        │
-│ │   Auth   │  │ • Matching Svc   │  │ • Cross-Campus       │        │
-│ │ • SAML   │  │ • Resource Svc   │  │   Discovery          │        │
-│ │ • OAuth  │  │ • Karma Svc      │  │ • MOU Analytics      │        │
-│ │ • OIDC   │  │ • Review Svc     │  │ • Nexus Credit Svc   │        │
-│ │          │  │                  │  │ • Admin Oversight    │        │
-│ └────┬─────┘  └────────┬─────────┘  └──────────┬───────────┘        │
-│      │                 │                        │                     │
-│      │    ┌────────────┼────────────────────────┘                    │
-│      │    │            │                                              │
-│      ▼    ▼            ▼                                              │
-│ ┌──────────────────────────────────┐                                 │
-│ │     REAL-TIME ENGINE             │                                 │
-│ │     (Socket.io on Redis Adapter) │                                 │
-│ │                                  │                                 │
-│ │  • Chat Rooms (1:1, Group)       │                                 │
-│ │  • Live Notifications            │                                 │
-│ │  • Presence (Online/Offline)     │                                 │
-│ │  • Collab Whiteboard Sync        │                                 │
-│ └──────────────┬───────────────────┘                                 │
-│                │                                                      │
-│ ┌──────────────▼───────────────────┐                                 │
-│ │     MODERATION & AI LAYER        │                                 │
-│ │                                  │                                 │
-│ │  • Content Moderation (NLP)      │                                 │
-│ │  • Spam/Scam Detection           │                                 │
-│ │  • Academic Dishonesty Flags     │                                 │
-│ │  • Sentiment Analysis            │                                 │
-│ └──────────────┬───────────────────┘                                 │
-└────────────────┼─────────────────────────────────────────────────────┘
-                 │
-┌────────────────┼─────────────────────────────────────────────────────┐
-│            DATA & INFRASTRUCTURE TIER                                 │
-│                │                                                      │
-│    ┌───────────┼───────────────────────────────────┐                 │
-│    │           │                                    │                 │
-│    ▼           ▼                                    ▼                 │
-│ ┌──────┐  ┌──────────┐  ┌────────┐  ┌───────┐  ┌────────────┐      │
-│ │Mongo │  │PostgreSQL│  │ Redis  │  │  S3/  │  │Meilisearch │      │
-│ │ DB   │  │(Relation │  │(Cache, │  │Cloud- │  │ (Full-text  │      │
-│ │(Flex │  │  al Data,│  │Session,│  │inary  │  │  Search)    │      │
-│ │Docs) │  │  MOU     │  │PubSub) │  │(Files)│  │             │      │
-│ │      │  │  Ledger) │  │        │  │       │  │             │      │
-│ └──────┘  └──────────┘  └────────┘  └───────┘  └────────────┘      │
-│                                                                       │
-│ ┌─────────────────────────────────────────────────────────────┐      │
-│ │  OBSERVABILITY: Prometheus + Grafana + ELK Stack            │      │
-│ │  CI/CD: GitHub Actions → Docker → AWS ECS / Kubernetes      │      │
-│ └─────────────────────────────────────────────────────────────┘      │
-└───────────────────────────────────────────────────────────────────────┘
-```
-
-### 2.2 Why This Architecture
-
-The system uses a **hybrid microservices** approach rather than a pure monolith or pure microservices pattern. Core services (Profile, Skill, Resource, Karma) are logically separated but deployed as a modular monolith initially, then split into independent services as traffic justifies it. The Nexus layer (cross-campus services) is separate from day one because different college groups may deploy their own instances. The real-time engine runs on a dedicated Node.js process with a Redis adapter so it can scale horizontally across multiple servers without losing WebSocket connections. The moderation layer is decoupled as a pipeline — every piece of user-generated content (listings, messages, uploaded files) passes through it asynchronously via a message queue (Bull/BullMQ on Redis) before being published.
-
-### 2.3 Federated Authentication Architecture
-
-This is the single most important technical decision in EduSync. Since the platform spans 20+ colleges under one group and then bridges to other college groups, authentication must handle multiple identity providers without forcing students to create yet another username/password.
-
-**Strategy: Identity Broker Model with OIDC as the Primary Protocol**
-
-```
-Student at IIT Jammu                    Student at IIT Delhi
-       │                                        │
-       ▼                                        ▼
-┌──────────────┐                      ┌──────────────┐
-│ IIT Jammu    │                      │ IIT Delhi    │
-│ Google       │                      │ Microsoft    │
-│ Workspace    │                      │ Azure AD     │
-│ (IdP)        │                      │ (IdP)        │
-└──────┬───────┘                      └──────┬───────┘
-       │                                      │
-       │          ┌──────────────────┐        │
-       └─────────►│  EduSync Auth    │◄───────┘
-                  │  Broker          │
-                  │  (Keycloak /     │
-                  │   Auth0)         │
-                  │                  │
-                  │  • Maps IdP      │
-                  │    identities    │
-                  │  • Issues        │
-                  │    EduSync JWT   │
-                  │  • Enforces      │
-                  │    campus domain │
-                  │    verification  │
-                  │  • Manages roles │
-                  │    (Student,     │
-                  │    Admin, TA)    │
-                  └────────┬─────────┘
-                           │
-                           ▼
-                  ┌──────────────────┐
-                  │  EduSync App     │
-                  │  (Unified JWT    │
-                  │   Session)       │
-                  └──────────────────┘
-```
-
-### 2.4 Database Schema Design
-(See DESIGN_DOC.md for full details)
+### 2.2 Federated Authentication
+**Strategy: Identity Broker Model with OIDC**
+EduSync uses an Auth Broker (Keycloak/Auth0) that maps student identities from individual campus Google Workspaces or Azure ADs into a unified EduSync JWT session. This ensures students use their official college IDs without the platform needing to store sensitive passwords.
 
 ---
 
-## PART 3: COMPLETE FEATURE SPECIFICATION
+## PART 3: DATABASE SCHEMA (PostgreSQL + MongoDB)
 
-(See DESIGN_DOC.md for full details)
+### 3.1 Relational Schema (PostgreSQL) - Audit & Karma
+- **Users**: `id, email, campus_id, role, karma_balance, verification_status`
+- **Campuses**: `id, name, group_id, mou_status, admin_node_url`
+- **Transactions**: `id, sender_id, receiver_id, amount, resource_id, type (Skill/Vault), timestamp`
+- **MOUs**: `id, campus_a_id, campus_b_id, agreement_terms, expiry_date`
 
----
-
-## PART 4: COMPLETE SCREEN-BY-SCREEN NAVIGATION MAP
-
-(See DESIGN_DOC.md for full details)
-
----
-
-## PART 5: END-TO-END USER FLOWS (Complete Journeys)
-
-(See DESIGN_DOC.md for full details)
+### 3.2 Document Schema (MongoDB) - Content & Chat
+- **Skills**: `id, mentor_id, title, category, description, campus_id, nexus_enabled`
+- **Messages**: `id, thread_id, sender_id, content, timestamp, moderation_flag`
+- **VaultResources**: `id, uploader_id, file_metadata, karma_price, status (Draft/Verified/Flagged)`
 
 ---
 
-## PART 6: TECHNICAL IMPLEMENTATION ROADMAP
+## PART 4: BACKEND API SPECIFICATION (RESTful)
 
-(See DESIGN_DOC.md for full details)
+### 4.1 Nexus Discovery
+- `GET /api/v1/nexus/explore?campus_id=...&mode=nexus`
+- `POST /api/v1/nexus/request-swap`
+
+### 4.2 Karma Economy
+- `GET /api/v1/wallet/transactions`
+- `POST /api/v1/wallet/transfer` (Internal Ledger only)
+
+### 4.3 Admin Oversight
+- `GET /api/v1/admin/moderation-queue`
+- `PATCH /api/v1/admin/verify-resource/:id`
+
+---
+
+## PART 5: CORE FEATURE DEVELOPMENT (Implemented)
+
+- **Onboarding Wizard**: Step-by-step identity and interest sync.
+- **Unified Dashboard**: Cross-campus activity feeds and personal stats.
+- **Skill Discovery**: Location-aware filtering with Nexus-mode toggle.
+
+---
+
+## PART 6: MULTI-CAMPUS "NEXUS" LOGIC
+
+The Nexus mode uses a **Bridge Controller** that routes queries not just to the local database but also to the federated nodes of partner colleges. This allows a user in Jammu to see "VLSI Design" resources from Delhi only when the inter-campus MOU is active.
+
+---
+
+## PART 7: ADMINISTRATIVE OVERSIGHT & GOVERNANCE
+
+Every inter-campus interaction is subject to **Guardian AI** monitoring.
+- **Content Moderation**: NLP scans for academic dishonesty or off-platform payment attempts.
+- **Dispute Resolution**: Admins can intervene in chat threads if a "Malpractice" flag is raised.
+- **MOU Analytics**: Admins see how much their students are actually collaborating with partner institutes.
+
+---
+
+## PART 8: REPUTATION & KARMA ECONOMY (KarmaWallet)
+
+Reputation is gamified through **Karma**:
+- **Earning**: Uploading resources, mentoring peers, receiving positive reviews.
+- **Spending**: Unlocking vault assets, requesting premium mentoring.
+- **Tiers**: Rookie → Scholar → Veteran → Nexus Elite (Unlocks cross-campus research groups).
+
+---
+
+## PART 9: REAL-TIME COMMUNICATION & NOTIFICATIONS
+
+Built on **Socket.io** with a Redis adapter for horizontal scaling.
+- **Peer Chat**: 1:1 encrypted-simulated channels.
+- **System Alerts**: Notifications for MOU status changes, credit transfers, and moderation flags.
+
+---
+
+## PART 10: SCALABILITY & DEVOPS ROADMAP (Target: Production)
+
+### 10.1 DevOps Strategy
+- **Containerization**: Dockerized microservices for consistent environments.
+- **CI/CD**: GitHub Actions for automated testing and deployment to Vercel/AWS.
+- **Monitoring**: Prometheus for metrics and ELK stack for centralized logging.
+
+### 10.2 Production Roadmap
+1. **Beta Testing**: Internal launch at IIT Jammu (1 campus).
+2. **Nexus Expansion**: Connect IIT Delhi and IIT Bombay nodes.
+3. **MOU Protocol**: Institutional dashboard launch for 20+ group campuses.
+4. **Public Bridge**: Opening MOUs to external college groups.
+
+---
+*Created for HackIndia 2026 Submission*

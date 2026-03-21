@@ -1,67 +1,72 @@
-<<<<<<< HEAD
-# openclaw-hackathon-hackindia-error404
-# EduSync: The Inter-Campus Knowledge Nexus 🚀
+# 🌌 EduSync: Federated Multi-Campus Collaboration Platform
 
-**Live Prototype:** [EduSync on GitHub Pages](https://hackindiaxyz.github.io/openclaw-hackathon-hackindia-error404/)
+**Bridging the Institutional Knowledge Gap with Sovereign Data & Trust.**
 
-**Official Submission Assets:**
-- [System Design Doc (Architecture/Roadmap)](./DESIGN_DOC.md)
-- [Project Walkthrough & Screenshots](./walkthrough.md)
-
-**EduSync** is an innovative, high-fidelity platform designed to solve the problem of fragmented student collaboration. It bridges the gap between institutes (e.g., IIT Jammu 🤝 IIT Delhi), creating a unified ecosystem for skill-sharing, peer-tutoring, and academic resource exchange.
-
-## 🌟 The Vision
-In many university chains, students from different campuses lack a formal way to collaborate. EduSync establishes a **"Nexus Layer"** where:
-- A student at **IIT Jammu** can find a mentor at **IIT Delhi** for niche subjects like VLSI or Advanced Robotics.
-- **Administrators** can oversee interactions to ensure academic integrity and MOU compliance.
-- A **Karma-based Reputation System** incentivizes students to help their peers across the entire network.
+EduSync is a full-stack, institutional-grade ecosystem designed to turn "MOUs on paper" into "MOUs in action." It enables students from across university chains (like IITs, NITs, and Private Groups) to collaborate, verify skills, and exchange academic assets in a secure, moderated, and incentivized environment.
 
 ---
 
-## 🔥 Key Features
+## 🔥 Key Market-Ready Features
 
-### 🏢 Multi-Campus Nexus
-- **Campus-Aware Discovery:** Toggle between "Local Only" and "Nexus Mode" to find cross-campus partners.
-- **Inter-Institutional Swaps:** Seamlessly trade skills with peers from partnered universities.
+### 🏢 Cross-Campus Nexus
+- **Federated Discovery**: Toggle **Nexus Mode** to search for experts and skill-swaps across the entire 20+ campus network.
+- **Institutional Sovereignty**: Each campus maintains its own local node (MongoDB) and auth policy.
+- **Trust Badges**: Visual indicators for "Verified Peer," "Nexus Partner," and "Admin Endorsed."
 
-### 🛡️ Administrative Oversight
-- **Moderator Dashboard:** Admins can review flagged content and monitor collaboration health.
-- **Audit Logs:** All inter-campus requests are logged to ensure transparency and prevent malpractices.
-- **Verified Resources:** Admin-certified lecture notes and study guides in the Knowledge Vault.
+### 🤝 Peer-to-Sync (Real-time Collaboration)
+- **Moderated Collab Rooms**: Secure, Socket.io-driven chatrooms for cross-campus mentoring.
+- **Guardian AI**: Adaptive NLP monitoring for academic integrity and institutional compliance.
+- **MOU Bridge Link**: Encrypted endpoints specially provisioned for MOU-partner schools.
 
-### 🎨 Premium User Experience
-- **Glassmorphism UI:** A stunning, modern interface built with Tailwind CSS v4 and Framer Motion.
-- **Intelligent Dashboard:** Real-time visibility into Karma, active swaps, and network status.
+### 🪙 Karma Economy
+- **Academic Ledger**: A dual-ledger system using **PostgreSQL** for immutable Karma transactions.
+- **Verified Vault**: A high-trust repository for academic assets (notes, projects, past papers) priced in Karma.
+- **Institutional Fairness**: Incentivizes expert students (Knowledge Donors) while supporting learners (Knowledge Recipients).
 
----
-
-## 🏗️ Technical Architecture
-
-- **Frontend:** React + Vite + Tailwind CSS v4
-- **State Management:** Framer Motion for smooth, contextual transitions.
-- **Design Principles:** Human-Centered Design (HCD), Accessibility-first, and Scalability-ready.
-
----
-
-## 🛠️ How to Run Locally
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/HackIndiaXYZ/openclaw-hackathon-hackindia-error404.git
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
+### ⚖️ University Oversight Hub
+- **Administrative Transparency**: Full visibility into campus-to-campus utilization and compliance.
+- **Health Matrix**: Real-time observability of all distributed campus nodes.
+- **Automated Moderation**: Queue-based system for auditing flagged peer-to-peer interactions.
 
 ---
 
-## 🎯 Our Aim
-To build **practical and scalable solutions** to real-world problems. EduSync isn't just a prototype; it's a blueprint for the future of institutional collaboration in India.
+## 🛠️ Technical Stack (Market-Ready)
 
-**HackIndia 2026 Submission** | Team: Error404
->>>>>>> 66a43cd (feat: implement EduSync Multi-Campus Nexus with Admin Oversight)
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React 19, Framer Motion, Tailwind CSS v4, Lucide React |
+| **Backend** | Node.js, Express, Socket.io (Real-time Nexus Bridge) |
+| **Databases** | MongoDB (Primary Store) & PostgreSQL (Karma/Audit Ledger) |
+| **Middleware** | JWT Federated Auth Proxy |
+| **DevOps** | Docker, Vercel Edge Functions, GH Actions |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v18+)
+- MongoDB & PostgreSQL (Stubs provided)
+
+### 1. Initialize Backend
+```bash
+cd server
+npm install
+npm run dev
+```
+
+### 2. Initialize Frontend (New Tab)
+```bash
+npm install
+npm run dev
+```
+
+### 3. Open the Nexus
+Navigate to `http://localhost:5173`. Select your campus to initialize the institutional handshake.
+
+---
+
+## 🏆 HackIndia 2026 Submission
+EduSync aims to build the most credible Student-to-Student ecosystem in India. Join the Nexus. Collaborate without borders.
+
+**Built by Team EduSync | Market-Ready V4.0**
