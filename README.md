@@ -1,10 +1,12 @@
 <<<<<<< HEAD
 # openclaw-hackathon-hackindia-error404
-Hackathon team repository for ERROR404 - [hackindia-team:openclaw-hackathon-hackindia:error404]
-=======
 # EduSync: The Inter-Campus Knowledge Nexus 🚀
 
 **Live Prototype:** [EduSync on GitHub Pages](https://hackindiaxyz.github.io/openclaw-hackathon-hackindia-error404/)
+
+**Official Submission Assets:**
+- [System Design Doc (Architecture/Roadmap)](./DESIGN_DOC.md)
+- [Project Walkthrough & Screenshots](./walkthrough.md)
 
 **EduSync** is an innovative, high-fidelity platform designed to solve the problem of fragmented student collaboration. It bridges the gap between institutes (e.g., IIT Jammu 🤝 IIT Delhi), creating a unified ecosystem for skill-sharing, peer-tutoring, and academic resource exchange.
 
