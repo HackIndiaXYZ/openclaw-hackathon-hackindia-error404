@@ -29,10 +29,12 @@ export const SkillSwapSchema = z.object({
   requesterUid: z.string(),
   providerUid: z.string(),
   skill: z.string(),
-  status: z.enum(['pending', 'accepted', 'active', 'completed', 'canceled']),
+  status: z.enum(['pending', 'accepted', 'active', 'completed', 'canceled', 'disputed']),
   karmaStaked: z.number().min(10),
   exchangeDuration: z.number().optional(), // in minutes
   nodeAffinity: CampusSchema.optional(),
+  isCrossCampus: z.boolean().default(false),
+  nexusLogId: z.string().optional(),
 });
 
 // Transaction Schema for Postgres Ledger

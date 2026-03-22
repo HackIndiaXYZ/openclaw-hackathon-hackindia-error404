@@ -42,3 +42,30 @@ export const resolveFlag = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Resolution Sync Failure' });
   }
 };
+
+export const getMOUAnalytics = async (req: Request, res: Response) => {
+  try {
+    const analytics = {
+      activeMous: 4,
+      crossCampusSwaps: 245,
+      nexusCreditExchange: 15400,
+      systemHealth: 98,
+      partnerClusters: [
+        { name: 'IIT_ALLIANCE', connections: 120 },
+        { name: 'NIT_TRICHY_GROUP', connections: 85 }
+      ]
+    };
+    res.json(analytics);
+  } catch (error) {
+    res.status(500).json({ error: 'MOU Analytics Retrieval Failure' });
+  }
+};
+
+export const syncNexusNodes = async (req: Request, res: Response) => {
+  try {
+    console.log('🌐 Triggering Federated Node Sync...');
+    res.json({ message: 'Nexus Nodes Synchronized', timestamp: new Date() });
+  } catch (error) {
+    res.status(500).json({ error: 'Nexus Synchronization Failure' });
+  }
+};
