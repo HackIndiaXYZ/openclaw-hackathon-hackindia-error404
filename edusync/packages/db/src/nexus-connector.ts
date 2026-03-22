@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
 import { Pool } from 'pg';
+export * from '../mongo/models/core.js';
 
 // Nexus Configuration for Institutional Nodes
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/edusync_nexus_social';

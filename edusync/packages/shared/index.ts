@@ -44,7 +44,8 @@ export const KarmaTransactionSchema = z.object({
   toUid: z.string(),
   amount: z.number(),
   reason: z.string(),
-  blockNumber: z.number().optional(), // For future blockchain anchoring
+  blockNumber: z.number().optional(),
+  institutionalNode: z.string().optional(),
   timestamp: z.date(),
 });
 

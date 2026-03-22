@@ -6,13 +6,13 @@ import router from './router.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 
+import { initSocket } from './socket.js';
+
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: { origin: '*' }
-});
+const io = initSocket(httpServer);
 
 app.use(cors());
 app.use(express.json());
@@ -31,6 +31,11 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', (roomId) => {
     socket.join(roomId);
+  });
+
+  socket.on('join-user-room', (uid: string) => {
+    console.log(`👤 User joined personal room: user:${uid}`);
+    socket.join(`user:${uid}`);
   });
 });
 

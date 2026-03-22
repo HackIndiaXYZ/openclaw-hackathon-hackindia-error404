@@ -4,11 +4,13 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Globe, ShieldCheck, Database, ShoppingBag, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Globe, ShieldCheck, Database, ShoppingBag, MessageSquare, Zap } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Nexus Explorer', href: '/dashboard/nexus', icon: Globe },
+  { name: 'Explorers', href: '/dashboard/nexus', icon: Globe },
+  { name: 'Swap Inbox', href: '/dashboard/swap/inbox', icon: MessageSquare },
+  { name: 'Outbox', href: '/dashboard/swap/outbox', icon: Zap },
   { name: 'Vault', href: '/dashboard/vault', icon: Database },
   { name: 'Redeem', href: '/dashboard/wallet', icon: ShoppingBag },
   { name: 'Admin Console', href: '/dashboard/admin/mou', icon: ShieldCheck },

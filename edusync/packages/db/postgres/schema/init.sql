@@ -30,3 +30,26 @@ CREATE TABLE IF NOT EXISTS mou_handshake_log (
   valid_until DATE,
   "isActive" BOOLEAN DEFAULT TRUE
 );
+
+CREATE TABLE IF NOT EXISTS nexus_transparency_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  swap_id VARCHAR(128) NOT NULL,
+  requester_id VARCHAR(128) NOT NULL,
+  responder_id VARCHAR(128) NOT NULL,
+  requester_campus_id VARCHAR(32) NOT NULL,
+  responder_campus_id VARCHAR(32) NOT NULL,
+  action VARCHAR(32) NOT NULL, -- 'swap_requested', 'swap_accepted', 'swap_completed'
+  metadata JSONB,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_ntl_swap_id ON nexus_transparency_log(swap_id);
+CREATE INDEX IF NOT EXISTS idx_ntl_requester ON nexus_transparency_log(requester_id);
+CREATE INDEX IF NOT EXISTS idx_ntl_responder ON nexus_transparency_log(responder_id);
+CREATE INDEX IF NOT EXISTS idx_ntl_timestamp ON nexus_transparency_log(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_ntl_campuses ON nexus_transparency_log(requester_campus_id, responder_campus_id);
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version VARCHAR(50) PRIMARY KEY,
+  applied_at TIMESTAMPTZ DEFAULT NOW()
+);

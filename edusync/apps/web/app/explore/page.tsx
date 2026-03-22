@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Globe, Filter, Zap, ArrowRight, User, Star, Info, Building2, MapPin } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useNexus } from '../../hooks/useNexus';
 
 export default function ExplorePage() {
-  const { skills, loading, searchSkills, proposeSwap } = useNexus();
+  const router = useRouter();
+  const { skills, loading, searchSkills } = useNexus();
   const [isNexusMode, setIsNexusMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -131,7 +133,7 @@ export default function ExplorePage() {
                     </div>
 
                     <button 
-                      onClick={() => proposeSwap(listing.firebaseUid, listing.skills[0], 50)}
+                      onClick={() => router.push(`/dashboard/swap/request?uid=${listing.firebaseUid}&skill=${listing.skills[0]}&campus=${listing.campus}`)}
                       className="w-full btn-primary font-black text-[10px] uppercase tracking-[0.2em] group overflow-hidden relative"
                     >
                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />

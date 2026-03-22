@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useKarma } from '../../hooks/useKarma';
 
 export default function DashboardPage() {
-  const { balance, loading } = useKarma();
+  const { balance, loading, error, refreshBalance } = useKarma();
 
   return (
     <motion.div 
@@ -32,20 +32,30 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { icon: Zap, label: 'Active Swaps', value: '12', sub: '3 Inter-Campus', color: 'indigo' },
-          { icon: Star, label: 'Karma Balance', value: loading ? '...' : balance.toLocaleString(), sub: 'Rank: #42 Global', color: 'amber' },
+          { 
+            icon: Star, 
+            label: 'Karma Balance', 
+            value: error ? 'ERR' : (loading ? '...' : balance.toLocaleString()), 
+            sub: error ? 'Sync Fail - Click to Retry' : 'Rank: #42 Global', 
+            color: error ? 'red' : 'amber',
+            onClick: error ? refreshBalance : undefined
+          },
           { icon: ShieldCheck, label: 'Verified Proof', value: '25', sub: 'Admin Certified', color: 'emerald' },
           { icon: Building2, label: 'Active MOUs', value: '05', sub: 'Nexus Bridge', color: 'purple' },
         ].map((stat, i) => (
-          <div key={i} className="glass-card p-6 border-white/5 bg-slate-900/40 relative group overflow-hidden hover:border-indigo-500/30 transition-all cursor-pointer shadow-xl">
-            <div className={`absolute top-0 right-0 p-6 opacity-[0.05] group-hover:scale-110 transition-transform text-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : 'purple'}-400`}>
+          <div 
+            key={i} 
+            onClick={stat.onClick as any}
+            className={`glass-card p-6 border-white/5 bg-slate-900/40 relative group overflow-hidden hover:border-indigo-500/30 transition-all cursor-pointer shadow-xl ${stat.color === 'red' ? 'border-red-500/50' : ''}`}
+          >
+            <div className={`absolute top-0 right-0 p-6 opacity-[0.05] group-hover:scale-110 transition-transform text-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : stat.color === 'red' ? 'red' : 'purple'}-400`}>
                 <stat.icon size={80} />
             </div>
             <div className="flex justify-between items-start mb-6">
-              <div className={`p-3 bg-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : 'purple'}-500/10 text-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : 'purple'}-400 rounded-xl`}>
+              <div className={`p-3 bg-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : stat.color === 'red' ? 'red' : 'purple'}-500/10 text-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : stat.color === 'red' ? 'red' : 'purple'}-400 rounded-xl`}>
                 <stat.icon size={24} />
               </div>
-              <span className={`text-[10px] font-black uppercase tracking-[0.2em] text-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : 'purple'}-400 leading-none`}>{stat.label}</span>
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] text-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : stat.color === 'red' ? 'red' : 'purple'}-400 leading-none`}>{stat.label}</span>
             </div>
             <div className="text-4xl font-black text-white tracking-widest shadow-sm">{stat.value}</div>
             <div className="text-xs text-slate-500 mt-3 flex items-center gap-1.5 font-bold uppercase tracking-widest italic leading-none truncate">
