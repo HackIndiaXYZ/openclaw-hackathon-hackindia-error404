@@ -7,7 +7,7 @@ export class VaultController {
   static async uploadResource(req: Request, res: Response) {
     try {
       if (!req.file) throw new Error('No file uploaded');
-      const student = (req as any).user;
+      const student = (req as any).student;
 
       const b64 = Buffer.from(req.file.buffer).toString("base64");
       let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
@@ -36,7 +36,7 @@ export class VaultController {
 
   static async listResources(req: Request, res: Response) {
     try {
-      const student = (req as any).user;
+      const student = (req as any).student;
       const { query, type, campus, nexusMode, verificationStatus, offset, limit } = req.query;
 
       const _offset = offset ? parseInt(offset as string) : 0;
@@ -75,7 +75,7 @@ export class VaultController {
   static async purchaseResource(req: Request, res: Response) {
     try {
       const { resourceId } = req.params;
-      const student = (req as any).user;
+      const student = (req as any).student;
       const resource = await VaultService.purchaseResource(resourceId, student.uid, student.campus);
       res.json({ success: true, data: resource });
     } catch (error: any) {
@@ -97,7 +97,7 @@ export class VaultController {
   static async resubmitResource(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const student = (req as any).user;
+      const student = (req as any).student;
       const result: any = await VaultService.resubmitResource(id, student.uid, req.body);
       res.json(result);
     } catch (error: any) {

@@ -16,7 +16,7 @@ export class CampusSettingsController {
   static async updateSettings(req: Request, res: Response) {
     try {
       const campus = (req as any).student.campus;
-      const adminUid = (req as any).student.firebaseUid;
+      const adminUid = (req as any).student.uid;
       const { settings } = req.body;
 
       if (!settings) return res.status(400).json({ error: 'settings is required' });
@@ -31,7 +31,7 @@ export class CampusSettingsController {
   static async updateNexusSettings(req: Request, res: Response) {
     try {
       const campus = (req as any).student.campus;
-      const adminUid = (req as any).student.firebaseUid;
+      const adminUid = (req as any).student.uid;
       
       const schema = z.object({
         enabled: z.boolean().optional(),
@@ -57,7 +57,7 @@ export class CampusSettingsController {
   static async updateGuardianSettings(req: Request, res: Response) {
     try {
       const campus = (req as any).student.campus;
-      const adminUid = (req as any).student.firebaseUid;
+      const adminUid = (req as any).student.uid;
 
       const schema = z.object({
         aiModerationEnabled: z.boolean().optional(),
@@ -78,7 +78,7 @@ export class CampusSettingsController {
   static async updateKarmaSettings(req: Request, res: Response) {
     try {
       const campus = (req as any).student.campus;
-      const adminUid = (req as any).student.firebaseUid;
+      const adminUid = (req as any).student.uid;
 
       const schema = z.object({
         uploadBonusAmount: z.number().min(0).max(100).optional(),
@@ -109,7 +109,7 @@ export class CampusSettingsController {
   static async addAdminUser(req: Request, res: Response) {
     try {
       const campus = (req as any).student.campus;
-      const adminUid = (req as any).student.firebaseUid;
+      const adminUid = (req as any).student.uid;
       const { targetUid } = req.body;
 
       if (!targetUid) return res.status(400).json({ error: 'targetUid is required' });
@@ -124,7 +124,7 @@ export class CampusSettingsController {
   static async removeAdminUser(req: Request, res: Response) {
     try {
       const campus = (req as any).student.campus;
-      const adminUid = (req as any).student.firebaseUid;
+      const adminUid = (req as any).student.uid;
       const { uid } = req.params;
 
       const result = await CampusSettingsService.removeAdminUser(campus, uid, adminUid);

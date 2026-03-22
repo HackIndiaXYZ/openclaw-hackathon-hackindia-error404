@@ -134,7 +134,7 @@ router.patch('/swaps/:id/accept', institutionalAuth, SwapController.acceptSwap);
 router.patch('/swaps/:id/reject', institutionalAuth, SwapController.rejectSwap);
 router.patch('/swaps/:id/complete', institutionalAuth, SwapController.completeSwap);
 router.patch('/swaps/:id/request-cancel', institutionalAuth, SwapController.requestCancel);
-router.patch('/swaps/:id/admin-override', institutionalAuth, SwapController.adminOverride);
+router.patch('/swaps/:id/admin-override', institutionalAuth, adminOnly, SwapController.adminOverride);
 router.get('/swaps', institutionalAuth, SwapController.getSwaps);
 router.get('/swaps/:id', institutionalAuth, SwapController.getSwapById);
 

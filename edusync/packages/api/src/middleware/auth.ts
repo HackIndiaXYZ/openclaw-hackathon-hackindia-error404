@@ -15,7 +15,10 @@ declare global {
   }
 }
 
-const NEXUS_SECRET = process.env.NEXUS_JWT_SECRET || 'fallback_secret_for_dev_only';
+const NEXUS_SECRET = process.env.NEXUS_JWT_SECRET;
+if (!NEXUS_SECRET) {
+  throw new Error('FATAL: NEXUS_JWT_SECRET environment variable is required. Server cannot start without it.');
+}
 
 export const institutionalAuth = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;

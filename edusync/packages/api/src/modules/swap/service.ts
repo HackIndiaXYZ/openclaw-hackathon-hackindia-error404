@@ -140,13 +140,17 @@ export class SwapService {
    * Transfers escrowed karma to responder.
    */
   static async completeSwap(swapId: string, callerUid: string) {
-    const swap = await SwapModel.findById(swapId);
-    if (!swap) throw new Error('Swap not found');
-    if (swap.requesterUid !== callerUid && swap.providerUid !== callerUid) throw new Error('Unauthorized');
-    if (swap.status !== 'accepted') throw new Error('Swap must be accepted to be completed');
+    const swap = await SwapModel.findOneAndUpdate(
+      { 
+        _id: swapId, 
+        status: 'accepted',
+        $or: [{ requesterUid: callerUid }, { providerUid: callerUid }]
+      },
+      { $set: { status: 'completed' } },
+      { new: true }
+    );
 
-    swap.status = 'completed';
-    await swap.save();
+    if (!swap) throw new Error('Swap not found, already completed, or unauthorized');
 
     // Release Escrow to Provider
     await KarmaService.recordTransaction({

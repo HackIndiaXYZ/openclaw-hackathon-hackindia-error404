@@ -1,9 +1,14 @@
 import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import { nexusConnector } from '@edusync/db';
 import router from './router.js';
 import { createServer } from 'http';
+
+// Security Middleware (Session 23)
+import { secureCors } from './middleware/cors-secure.js';
+import { securityHeaders, httpsRedirect } from './middleware/security-headers.js';
+import { globalLimiter, ddosProtection } from './middleware/rate-limit-secure.js';
+import { sanitizeInput } from './middleware/validation.js';
 import { Server } from 'socket.io';
 import { Worker } from 'bullmq';
 import { initSocket } from './socket.js';
@@ -32,8 +37,14 @@ const app = express();
 const httpServer = createServer(app);
 const io = initSocket(httpServer);
 
-app.use(cors());
-app.use(express.json());
+// Security layers (order matters)
+app.use(httpsRedirect);
+app.use(securityHeaders);
+app.use(secureCors);
+app.use(ddosProtection);
+app.use(globalLimiter);
+app.use(express.json({ limit: '1mb' }));
+app.use(sanitizeInput);
 
 // Attach Nexus Router
 app.use('/api/v1', router);
