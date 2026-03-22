@@ -16,4 +16,5 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
+export const api = apiClient;
 export default apiClient;

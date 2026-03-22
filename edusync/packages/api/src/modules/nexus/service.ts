@@ -62,15 +62,15 @@ export class NexusService {
         mouId: activeMOU.id,
         mouValidUntil: activeMOU.validUntil,
         mouAgreementTerms: activeMOU.terms,
-        priorCollaborationCount: logs.rowCount,
-        hasCollaboratedBefore: logs.rowCount > 0,
+        priorCollaborationCount: logs.rowCount ?? 0,
+        hasCollaboratedBefore: (logs.rowCount ?? 0) > 0,
         crossCampusSwapsCompleted: swapsCompleted,
         interactions: logs.rows
       },
       globalRank: {
-        rank: rankData.rank,
-        totalStudents: rankData.totalStudents,
-        tier: rankData.tier
+        rank: rankData?.rank || '??',
+        totalStudents: rankData?.totalStudents || 0,
+        tier: rankData?.tier || 'bronze'
       }
     };
   }

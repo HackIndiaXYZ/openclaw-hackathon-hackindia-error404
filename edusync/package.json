@@ -2,10 +2,12 @@
   "name": "edusync-monorepo",
   "private": true,
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "db:seed": "npm --workspace=@edusync/db run seed",
+    "test:smoke": "npm --workspace=api run test:smoke"
   },
   "devDependencies": {
     "turbo": "latest",

@@ -3,6 +3,7 @@ import { KarmaService } from '../karma/service.js';
 import { LeaderboardService } from '../leaderboard/service.js';
 import { NotificationService } from '../notifications/service.js';
 import { SwapService } from '../swap/service.js';
+import { meilisearchIndexerQueue } from '../../lib/queues.js';
 
 export class StudentDetailService {
   /**
@@ -10,16 +11,13 @@ export class StudentDetailService {
    * Every method MUST verify the student belongs to the requesting admin's campus.
    */
   static async getStudentProfile(targetUid: string, adminCampus: string) {
-    // 1. Campus Isolation Check (Mandatory)
     const student = await StudentModel.findOne({ 
       firebaseUid: targetUid, 
       campus: adminCampus 
     }).lean();
     
-    // Return 404 if not found on this campus to prevent data leakage
     if (!student) throw new Error('STUDENT_NOT_FOUND');
 
-    // 2. Parallel Fetch (Option B)
     const [
       swaps,
       resources,
@@ -45,8 +43,8 @@ export class StudentDetailService {
       profile: student,
       karma: {
         balance: karmaBalance,
-        rank: karmaRank.rank,
-        tier: karmaRank.tier,
+        rank: karmaRank?.rank || '??',
+        tier: karmaRank?.tier || 'bronze',
         history: karmaHistory
       },
       swaps: {
@@ -59,7 +57,7 @@ export class StudentDetailService {
       },
       resources: {
         total: resources.length,
-        certified: resources.filter(r => r.status === 'certified').length,
+        certified: resources.filter(r => (r as any).verification?.status === 'verified').length,
         recent: resources
       },
       moderation: {
@@ -86,11 +84,9 @@ export class StudentDetailService {
     action: 'warn' | 'suspend' | 'ban' | 'reinstate',
     options: { reason: string; durationDays?: number }
   ) {
-    // 1. Campus Isolation (Mandatory)
     const student = await StudentModel.findOne({ firebaseUid: targetUid, campus: adminCampus });
     if (!student) throw new Error('STUDENT_NOT_FOUND');
 
-    // 2. Self-action Prevention
     if (targetUid === adminUid) throw new Error('CANNOT_MODERATE_SELF');
 
     let status = student.moderation?.status || 'good_standing';
@@ -105,14 +101,12 @@ export class StudentDetailService {
       case 'suspend':
         if (!options.durationDays) throw new Error('SUSPENSION_DURATION_REQUIRED');
         status = 'suspended';
-        // Side Effect: Cancel all active/pending swaps + refund escrow
         await this.cancelActiveSwaps(targetUid, adminUid, 'student_suspended');
         updateFields['moderation.suspendedUntil'] = new Date(Date.now() + options.durationDays * 86400000);
         notificationType = 'account_suspended';
         break;
       case 'ban':
         status = 'banned';
-        // Side Effect: Cancel active swaps + refund + revoke Nexus access
         await this.cancelActiveSwaps(targetUid, adminUid, 'student_banned');
         updateFields['nexus.crossCampusEnabled'] = false;
         notificationType = 'account_banned';
@@ -125,13 +119,17 @@ export class StudentDetailService {
         break;
     }
 
-    // Apply the status update
     await StudentModel.findOneAndUpdate(
       { firebaseUid: targetUid },
       { $set: { 'moderation.status': status, ...updateFields } }
     );
 
-    // 3. Mandatory Audit Logging mapping
+    // Trigger Meilisearch Indexing
+    await meilisearchIndexerQueue.add('index-student', {
+      studentId: targetUid,
+      operation: 'upsert'
+    });
+
     const actionTypeMap: Record<string, string> = {
       warn: 'student_warned',
       suspend: 'student_suspended',
@@ -144,7 +142,6 @@ export class StudentDetailService {
       [adminUid, adminCampus, actionTypeMap[action], 'student', targetUid, options.reason]
     );
 
-    // 4. Notification Hub triggering
     await NotificationService.create(targetUid, notificationType, {
       reason: options.reason,
       until: updateFields['moderation.suspendedUntil']
@@ -153,11 +150,7 @@ export class StudentDetailService {
     return { success: true, status, suspendedUntil: updateFields['moderation.suspendedUntil'] };
   }
 
-  /**
-   * Clears numerical risk flags but maintains permanent audit trail.
-   */
   static async clearStudentRecord(targetUid: string, adminUid: string, adminCampus: string, reason: string) {
-    // 1. Campus Isolation
     const student = await StudentModel.findOne({ firebaseUid: targetUid, campus: adminCampus });
     if (!student) throw new Error('STUDENT_NOT_FOUND');
 
@@ -166,7 +159,6 @@ export class StudentDetailService {
       { $set: { 'moderation.flags': 0 } }
     );
 
-    // 2. Audit Logging
     await nexusConnector.pg.query(
       'INSERT INTO admin_actions (admin_uid, admin_campus, action_type, target_entity_type, target_entity_id, reason) VALUES ($1, $2, $3, $4, $5, $6)',
       [adminUid, adminCampus, 'record_cleared', 'student', targetUid, reason]
@@ -195,9 +187,6 @@ export class StudentDetailService {
     return FlagModel.find(query).sort({ _id: -1 }).limit(limit).lean();
   }
 
-  /**
-   * Helper to cancel active swaps and refund escrow via SwapService.
-   */
   private static async cancelActiveSwaps(targetUid: string, adminUid: string, reasonPrefix: string) {
     const activeSwaps = await SwapModel.find({
       $or: [{ requesterUid: targetUid }, { providerUid: targetUid }],
@@ -205,7 +194,6 @@ export class StudentDetailService {
     });
 
     for (const swap of activeSwaps) {
-      // adminOverrideSwap handles both status change and escrow refund
       await SwapService.adminOverrideSwap(
         swap._id.toString(), 
         'force_refund', 

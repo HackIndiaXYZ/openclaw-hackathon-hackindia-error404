@@ -20,7 +20,11 @@ export type NotificationType =
   | 'account_warned'
   | 'account_suspended'
   | 'account_banned'
-  | 'account_reinstated';
+  | 'account_reinstated'
+  | 'mou_expiring_soon'
+  | 'mou_expired'
+  | 'mou_proposal_received'
+  | 'mou_proposal_accepted';
 
 export interface INotification extends Document {
   recipientUid: string;
@@ -46,7 +50,8 @@ const NotificationSchema: Schema = new Schema({
       'resource_certified', 'resource_rejected', 'karma_earned', 'karma_spent',
       'guardian_warning', 'nexus_mou_activated', 'karma_tier_upgrade', 'leaderboard_top10',
       'resource_changes_requested', 'account_warned', 'account_suspended',
-      'account_banned', 'account_reinstated'
+      'account_banned', 'account_reinstated', 'mou_expiring_soon', 'mou_expired',
+      'mou_proposal_received', 'mou_proposal_accepted'
     ]
   },
   title: { type: String, required: true },

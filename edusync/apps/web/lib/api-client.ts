@@ -9,7 +9,7 @@ const apiClient = axios.create({
 
 // Attach Institutional JWT to every request
 apiClient.interceptors.request.use(async (config) => {
-  const session = await getSession();
+  const session = await getSession() as any;
   if (session?.accessToken) {
     config.headers.Authorization = `Bearer ${session.accessToken}`;
   }

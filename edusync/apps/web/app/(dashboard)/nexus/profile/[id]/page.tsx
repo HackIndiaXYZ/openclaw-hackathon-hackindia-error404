@@ -16,16 +16,21 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useNexus } from '../../../../hooks/useNexus';
-import { TierBadge } from '../../../../components/ui/TierBadge';
-import { MOUDisclosureModal } from '../../../../components/features/MOUDisclosureModal';
+import { useNexus } from '../../../../../hooks/useNexus';
+import { TierBadge } from '../../../../../components/ui/TierBadge';
+import { MOUDisclosureModal } from '../../../../../components/features/MOUDisclosureModal';
 import { format } from 'date-fns';
 
 export default function NexusProfilePage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const params = useParams();
   const router = useRouter();
   const { fetchCrossCampusProfile, profileData, nexusMeta, globalRank, loading } = useNexus();
   const [modalOpen, setModalOpen] = useState(false);
+
+  if (!mounted) return null;
 
   useEffect(() => {
     if (params.id) {
@@ -95,9 +100,9 @@ export default function NexusProfilePage() {
 
                <div className="flex items-center justify-center md:justify-start gap-4 pt-2">
                   <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3">
-                     <TierBadge tier={globalRank.tier} size="md" />
+                     <TierBadge tier={globalRank?.tier || 'bronze'} size="md" />
                      <div className="h-6 w-px bg-white/10"></div>
-                     <span className="text-[10px] font-black text-white uppercase italic tracking-widest">Rank #{globalRank.rank}</span>
+                     <span className="text-[10px] font-black text-white uppercase italic tracking-widest">Rank #{globalRank?.rank || '---'}</span>
                   </div>
                   <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl flex items-center gap-2">
                      <Zap size={14} className="text-amber-400" />
@@ -116,8 +121,8 @@ export default function NexusProfilePage() {
                <div className="space-y-0.5">
                   <p className="text-[9px] font-black text-white uppercase tracking-widest italic">MOU Verification Active</p>
                   <p className="text-[8px] text-slate-500 font-bold uppercase tracking-tight italic">
-                    Bridge: {nexusMeta.mouId.substring(0, 13)}...
-                    {nexusMeta.mouValidUntil && ` • Valid until ${format(new Date(nexusMeta.mouValidUntil), 'MMM yyyy')}`}
+                    Bridge: {nexusMeta?.mouId?.substring(0, 13) || 'CONN'}...
+                    {nexusMeta?.mouValidUntil && ` • Valid until ${format(new Date(nexusMeta.mouValidUntil), 'MMM yyyy')}`}
                   </p>
                </div>
             </div>
@@ -170,7 +175,7 @@ export default function NexusProfilePage() {
                   <h3 className="text-white font-black uppercase text-sm italic tracking-tight">Nexus Collaboration History</h3>
                </div>
                
-               {nexusMeta.hasCollaboratedBefore ? (
+               {nexusMeta?.hasCollaboratedBefore ? (
                   <div className="space-y-4">
                      <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 bg-white/5 rounded-2xl border border-white/5">

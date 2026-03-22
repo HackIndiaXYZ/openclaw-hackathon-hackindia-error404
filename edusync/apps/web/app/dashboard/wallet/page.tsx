@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Wallet, Star, TrendingUp, ArrowUpRight, ArrowDownLeft, ShieldCheck, Zap, Globe, Package, Gift } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../../../components/ui/button';
 
 export default function KarmaWalletPage() {
   const transactions = [

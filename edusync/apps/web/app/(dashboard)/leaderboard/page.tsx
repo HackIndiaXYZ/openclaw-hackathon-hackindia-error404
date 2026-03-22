@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Trophy, 
   Globe, 
@@ -19,6 +19,9 @@ import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 
 export default function LeaderboardPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { 
     students, 
     myRankData, 
@@ -28,12 +31,22 @@ export default function LeaderboardPage() {
     lastComputed 
   } = useLeaderboard();
 
+  if (!mounted) return null;
+
   // Split podium and list
   const top3 = students.slice(0, 3);
   const list = students.slice(3);
 
   // Podium Order layout: 2nd | 1st | 3rd
   const podiumOrder = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3;
+
+  if (loading && students.length === 0) {
+    return (
+      <div className="h-[80vh] flex items-center justify-center bg-slate-950">
+        <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin shadow-[0_0_20px_rgba(99,102,241,0.2)]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-12">
@@ -55,7 +68,7 @@ export default function LeaderboardPage() {
           <div className="flex p-1.5 bg-white/5 border border-white/10 rounded-2xl">
             <button
               onClick={() => setMode('campus')}
-              className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+              className={`px-6 py-2 rounded-xl text-[10px) font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
                 mode === 'campus' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-white'
               }`}
             >
@@ -94,25 +107,25 @@ export default function LeaderboardPage() {
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Your Position</span>
                   <div className="text-5xl font-black text-white italic tracking-tighter">
-                    #{myRankData.rank || '??'}
+                    #{myRankData?.rank || '??'}
                   </div>
                 </div>
                 <div className="h-12 w-px bg-white/10 hidden md:block"></div>
                 <div className="space-y-2">
-                   <TierBadge tier={myRankData.tier} size="lg" />
+                   <TierBadge tier={myRankData?.tier || 'bronze'} size="lg" />
                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] italic">Current Rank Tier</p>
                 </div>
              </div>
 
              <div className="flex-1 max-w-md w-full space-y-3">
                 <div className="flex justify-between items-end">
-                   <span className="text-[10px] font-black text-white uppercase tracking-widest italic">{myRankData.karma} Karma</span>
-                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">Next Tier: {myRankData.karmaToNextTier} more</span>
+                   <span className="text-[10px] font-black text-white uppercase tracking-widest italic">{myRankData?.karma || 0} Karma</span>
+                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">Next Tier: {myRankData?.karmaToNextTier || 0} more</span>
                 </div>
                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
                    <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, (myRankData.karma / (myRankData.karma + myRankData.karmaToNextTier)) * 100)}%` }}
+                    animate={{ width: `${Math.min(100, ((myRankData?.karma || 0) / ((myRankData?.karma || 0) + (myRankData?.karmaToNextTier || 1))) * 100)}%` }}
                     className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
                    />
                 </div>
@@ -125,6 +138,7 @@ export default function LeaderboardPage() {
       {!loading && top3.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end pt-12">
           {podiumOrder.map((s, idx) => {
+            if (!s) return null;
             const isFirst = s.karmaRank === 1;
             const isSecond = s.karmaRank === 2;
             const containerHeight = isFirst ? 'h-[360px]' : isSecond ? 'h-[320px]' : 'h-[280px]';
@@ -221,7 +235,7 @@ export default function LeaderboardPage() {
                        </div>
                        <div className="col-span-2 lg:col-span-1 text-right text-sm font-black text-indigo-400 tabular-nums italic">{s.karma}</div>
                     </motion.div>
-                 ))
+                  ))
                )}
             </div>
          </div>

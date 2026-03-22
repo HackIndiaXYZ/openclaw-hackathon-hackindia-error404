@@ -13,7 +13,7 @@ import {
   Zap,
   ShieldAlert
 } from 'lucide-react';
-import { useVault } from '../../../hooks/useVault';
+import { useVault } from '../../../../hooks/useVault';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 

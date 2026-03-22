@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Activity, AlertTriangle, CheckCircle, Building2, Zap, Server, Database, Lock } from 'lucide-react';
-import { useAdmin } from '../../hooks/useAdmin';
+import { useAdmin } from '../../../hooks/useAdmin';
 
 export default function AdminHubPage() {
   const { stats, queue, loading, fetchStats, fetchQueue, resolveItem } = useAdmin();

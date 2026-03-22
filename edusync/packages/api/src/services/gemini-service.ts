@@ -53,20 +53,27 @@ export class GeminiService {
   /**
    * Guardian AI: Safety and compliance analysis.
    */
-  static async analyzeSafety(content: string): Promise<{ isSafe: boolean; reason?: string }> {
+  static async analyzeSafety(content: string): Promise<{ isSafe: boolean; isFlagged: boolean; reason?: string; severity?: 'low' | 'medium' | 'high' | 'critical' }> {
     try {
       const prompt = `Analyze the following content for academic integrity and institutional safety: "${content}".
       Check for:
       - Academic dishonesty (cheating services, buying assignments)
       - Harassment or toxicity
       - Explicit content
-      Return a JSON: { "isSafe": boolean, "reason": string | null }`;
+      Return a JSON: { "isSafe": boolean, "isFlagged": boolean, "reason": string | null, "severity": "low" | "medium" | "high" | "critical" }`;
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
-      return JSON.parse(response.text());
+      const parsed = JSON.parse(response.text());
+      return {
+        isSafe: parsed.isSafe,
+        isFlagged: parsed.isFlagged ?? !parsed.isSafe,
+        reason: parsed.reason,
+        severity: parsed.severity || (parsed.isSafe ? 'low' : 'medium')
+      };
     } catch (error) {
-      return { isSafe: true }; 
+      console.error("Gemini Safety Error:", error);
+      return { isSafe: true, isFlagged: false }; 
     }
   }
 

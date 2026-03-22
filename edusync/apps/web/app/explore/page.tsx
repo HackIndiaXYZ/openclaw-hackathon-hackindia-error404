@@ -3,27 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, 
-  Globe, 
-  Filter, 
-  Zap, 
-  ArrowRight, 
-  User, 
-  Star, 
-  Info, 
-  Building2, 
-  MapPin,
-  ShieldCheck,
-  ExternalLink
+  Search, Globe, Filter, Zap, ArrowRight, User, 
+  Star, Info, Building2, MapPin, ShieldCheck, ExternalLink
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNexus } from '../../hooks/useNexus';
 import { format } from 'date-fns';
+import { OffsetPagination } from '../../components/shared/OffsetPagination';
 
 export default function ExplorePage() {
   const router = useRouter();
   const { 
     skills, 
+    totalSkills,
     loading, 
     searchSkills, 
     fetchNexusExplore, 
@@ -33,20 +25,40 @@ export default function ExplorePage() {
   
   const [isNexusMode, setIsNexusMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [offset, setOffset] = useState(0);
+  const LIMIT = 30;
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (searchQuery.length < 2) {
+        setSuggestions([]);
+        return;
+      }
+      try {
+        const { data } = await (await import('../../lib/api-client')).default.get('/search/suggestions', {
+          params: { query: searchQuery, type: 'students' }
+        });
+        setSuggestions(data);
+      } catch {
+        setSuggestions([]);
+      }
+    };
+    fetchSuggestions();
+  }, [searchQuery]);
 
   useEffect(() => {
     if (isNexusMode) {
       fetchMOUPartners();
-      fetchNexusExplore(searchQuery);
+      fetchNexusExplore(searchQuery, offset, LIMIT);
     } else {
-      searchSkills(searchQuery, 'IIT_JAMMU');
+      searchSkills(searchQuery, '', offset, LIMIT);
     }
-  }, [searchQuery, isNexusMode, fetchMOUPartners, fetchNexusExplore, searchSkills]);
+  }, [searchQuery, isNexusMode, offset, fetchMOUPartners, fetchNexusExplore, searchSkills]);
 
   return (
     <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
       className="p-8 space-y-8 max-w-[1600px] mx-auto min-h-screen"
     >
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
@@ -63,7 +75,10 @@ export default function ExplorePage() {
               <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Cross-Campus Access</span>
            </div>
            <button 
-             onClick={() => setIsNexusMode(!isNexusMode)}
+             onClick={() => {
+                setIsNexusMode(!isNexusMode);
+                setOffset(0);
+             }}
              className={`flex items-center gap-3 px-6 py-3 rounded-xl transition-all font-black text-[10px] uppercase tracking-[0.2em] relative overflow-hidden group ${isNexusMode ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/30 ring-2 ring-indigo-500/50' : 'bg-white/5 text-slate-400 border border-white/10 hover:border-indigo-500/30'}`}
            >
              {isNexusMode && <motion.div layoutId="nexus-glow" className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 animate-pulse" />}
@@ -73,13 +88,11 @@ export default function ExplorePage() {
         </div>
       </header>
 
-      {/* Partner Connectivity Cards (Only in Nexus Mode) */}
+      {/* Partner Connectivity Cards */}
       <AnimatePresence>
         {isNexusMode && partners.length > 0 && (
           <motion.section 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden"
           >
              {partners.map((partner: any) => (
@@ -121,8 +134,33 @@ export default function ExplorePage() {
                          placeholder="Skill, ID, or Topic..." 
                          className="w-full pl-12 pr-4 py-3.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium placeholder:text-slate-600 outline-none"
                          value={searchQuery}
-                         onChange={(e) => setSearchQuery(e.target.value)}
+                         onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setOffset(0);
+                         }}
                        />
+                       <AnimatePresence>
+                          {suggestions.length > 0 && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                              className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+                            >
+                              {suggestions.map((s, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => {
+                                    setSearchQuery(s);
+                                    setSuggestions([]);
+                                    setOffset(0);
+                                  }}
+                                  className="w-full text-left px-4 py-3 hover:bg-indigo-600/20 text-xs font-black uppercase italic tracking-tighter text-slate-300 hover:text-white transition-colors border-b border-white/5 last:border-0"
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                     </div>
                  </div>
 
@@ -143,24 +181,18 @@ export default function ExplorePage() {
         <section className="lg:col-span-3 space-y-6">
            <div className="flex justify-between items-center mb-4">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                {loading ? 'Nexus Uplink Active...' : `Showing ${skills.length} results`}
+                {loading ? 'Nexus Uplink Active...' : `Showing ${skills.length} of ${totalSkills} results`}
               </span>
-              <div className="flex gap-2">
-                 <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-400">Sort: Karma Score</div>
-              </div>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <AnimatePresence mode="popLayout">
                 {skills.map((listing: any, i: number) => (
                   <motion.div
-                    key={listing.uid || listing._id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
+                    key={listing.uid || listing._id || i}
+                    layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ delay: i * 0.05 }}
-                    className={`glass-card p-6 border-white/5 bg-slate-900/40 relative group overflow-hidden border-l-4 transition-all shadow-xl ${listing.campus !== 'IIT_JAMMU' ? 'hover:border-l-indigo-500' : 'hover:border-l-slate-500'}`}
+                    className={`glass-card p-6 border-white/5 bg-slate-900/40 relative group overflow-hidden border-l-4 transition-all shadow-xl hover:border-l-indigo-500`}
                   >
                     <div className="flex justify-between items-start mb-6">
                        <div className="flex items-center gap-4">
@@ -170,8 +202,8 @@ export default function ExplorePage() {
                           <div>
                              <h4 className="text-lg font-black text-white tracking-tight uppercase italic">{listing.name}</h4>
                              <div className="flex items-center gap-2 mt-1">
-                                <span className={listing.campus !== 'IIT_JAMMU' ? "px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-md text-[8px] font-black uppercase italic" : "px-2 py-0.5 bg-slate-500/10 text-slate-500 border border-slate-500/20 rounded-md text-[8px] font-black uppercase italic"}>
-                                   {listing.campus !== 'IIT_JAMMU' ? "Nexus Partner" : "Local Node"}
+                                <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-md text-[8px] font-black uppercase italic">
+                                   Node Sync Active
                                 </span>
                                 <span className="flex items-center gap-1 text-[10px] font-black text-slate-500 uppercase">
                                    <MapPin size={10} className="text-indigo-400" /> {listing.campus}
@@ -179,41 +211,36 @@ export default function ExplorePage() {
                              </div>
                           </div>
                        </div>
-                       <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[10px] font-black text-amber-500 flex items-center gap-1 shadow-[0_0_15px_rgba(245,158,11,0.1)] italic">
+                       <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[10px] font-black text-amber-500 flex items-center gap-1 italic">
                           <Star size={12} className="fill-current" /> {listing.karma}
                        </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-8">
                        {listing.skills?.slice(0, 3).map((skill: string, idx: number) => (
-                          <span key={idx} className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-slate-400 group-hover:text-indigo-400 group-hover:border-indigo-500/30 transition-all uppercase italic">
+                          <span key={idx} className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-slate-400 group-hover:text-indigo-400 uppercase italic">
                              #{skill}
                           </span>
                        ))}
                     </div>
 
                     <button 
-                      onClick={() => {
-                        if (listing.campus !== 'IIT_JAMMU') {
-                           router.push(`/dashboard/nexus/profile/${listing.uid || listing.firebaseUid}`);
-                        } else {
-                           router.push(`/dashboard/profile/${listing.uid || listing.firebaseUid}`);
-                        }
-                      }}
-                      className="w-full py-4 bg-white/5 hover:bg-indigo-600 border border-white/10 hover:border-indigo-500 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] group overflow-hidden relative transition-all shadow-xl italic flex items-center justify-center gap-2"
+                      onClick={() => router.push(`/dashboard/profile/${listing.uid || listing.firebaseUid}`)}
+                      className="w-full py-4 bg-white/5 hover:bg-indigo-600 border border-white/10 hover:border-indigo-500 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all italic flex items-center justify-center gap-2"
                     >
-                       View Profile <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                       Analyze Node <ArrowRight size={14} />
                     </button>
-                    
-                    {listing.campus !== 'IIT_JAMMU' && (
-                       <div className="absolute top-0 right-0 p-2 opacity-[0.05] group-hover:scale-150 transition-transform -rotate-12 pointer-events-none">
-                          <Globe size={120} className="text-indigo-400" />
-                       </div>
-                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>
            </div>
+
+           <OffsetPagination 
+             total={totalSkills} 
+             limit={LIMIT} 
+             currentOffset={offset} 
+             onOffsetChange={setOffset} 
+           />
         </section>
       </div>
     </motion.div>

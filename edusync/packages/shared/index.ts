@@ -95,7 +95,7 @@ export type SkillSwap = z.infer<typeof SkillSwapSchema>;
 export type KarmaTransaction = z.infer<typeof KarmaTransactionSchema>;
 
 // Security Utilities (AES-256-GCM)
-export * from './utils/security';
+export * from './utils/security.js';
 
 export const SYSTEM_ACCOUNTS = ['NEXUS_TREASURY', 'KARMA_ESCROW', 'NEXUS_SYSTEM'] as const;
 export type SystemAccount = typeof SYSTEM_ACCOUNTS[number];
@@ -106,3 +106,5 @@ export const HIGH_RISK_KEYWORDS = [
   'do my assignment', 'write my essay', 'take my exam',  // academic dishonesty
   'whatsapp me', 'telegram me', 'contact outside',  // off-platform contact attempts
 ] as const;
+
+export * from './utils/visibility.js';

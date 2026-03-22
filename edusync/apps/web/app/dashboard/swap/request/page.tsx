@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+export const dynamic = 'force-dynamic';
+
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Zap, ShieldCheck, ArrowRight, Star, AlertCircle } from 'lucide-react';
-import { useKarma } from '../../../hooks/useKarma';
+import { useKarma } from '../../../../hooks/useKarma';
 
-export default function SwapRequestPage() {
+function SwapRequestForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { balance } = useKarma();
@@ -43,15 +45,13 @@ export default function SwapRequestPage() {
           skill: form.skill,
           offer: form.offer,
           karmaStaked: form.karmaStaked,
-          isCrossCampus: targetCampus !== 'IIT_JAMMU', // Example local check
+          isCrossCampus: targetCampus !== 'IIT_JAMMU',
           providerCampus: targetCampus,
         }),
       });
 
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
-
-      // Success! Redirect to inbox or collab room (deferred)
       router.push('/dashboard?swap_requested=true');
     } catch (err: any) {
       setError(err.message);
@@ -59,6 +59,92 @@ export default function SwapRequestPage() {
       setLoading(false);
     }
   };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-8 glass-card p-10 bg-slate-900/40 border-white/5 shadow-2xl">
+      {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-400 text-sm font-bold italic">
+          <AlertCircle size={18} /> {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Target Peer</label>
+          <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-white font-bold text-sm">
+              @{targetUid || 'Unknown User'}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Campus Node</label>
+          <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-indigo-400 font-bold text-sm flex items-center gap-2">
+              <ShieldCheck size={16} /> {targetCampus || 'Local'}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Skill Requested (from them)</label>
+        <input 
+          type="text"
+          required
+          className="w-full p-4 bg-slate-950/50 border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500 transition-all font-bold italic"
+          value={form.skill}
+          onChange={(e) => setForm({ ...form, skill: e.target.value })}
+        />
+      </div>
+
+      <div className="space-y-3">
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Skill Offered (from you)</label>
+        <input 
+          type="text"
+          required
+          placeholder="Ex: React Optimization"
+          className="w-full p-4 bg-slate-950/50 border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500 transition-all font-bold italic text-sm"
+          value={form.offer}
+          onChange={(e) => setForm({ ...form, offer: e.target.value })}
+        />
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Karma Stake</label>
+          <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Available: {balance}</span>
+        </div>
+        <div className="relative">
+          <Star className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" size={18} />
+          <input 
+            type="number"
+            min="10"
+            required
+            className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500 transition-all font-black text-xl tracking-widest"
+            value={form.karmaStaked}
+            onChange={(e) => setForm({ ...form, karmaStaked: parseInt(e.target.value) })}
+          />
+        </div>
+        <p className="text-[9px] text-slate-500 italic font-bold uppercase tracking-widest">
+          * Min 10 Karma. Amount is locked in Escrow until completion or rejection.
+        </p>
+      </div>
+
+      <button 
+        type="submit"
+        disabled={loading}
+        className="w-full btn-primary py-5 font-black uppercase tracking-[0.3em] text-xs flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+      >
+        {loading ? 'Transmitting...' : (
+          <>Send Nexus Request <ArrowRight size={18} /></>
+        )}
+      </button>
+    </form>
+  );
+}
+
+export default function SwapRequestPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
 
   return (
     <motion.div 
@@ -73,82 +159,9 @@ export default function SwapRequestPage() {
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-8 glass-card p-10 bg-slate-900/40 border-white/5 shadow-2xl">
-        {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-400 text-sm font-bold italic">
-            <AlertCircle size={18} /> {error}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Target Peer</label>
-            <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-white font-bold text-sm">
-                @{targetUid || 'Unknown User'}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Campus Node</label>
-            <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-indigo-400 font-bold text-sm flex items-center gap-2">
-                <ShieldCheck size={16} /> {targetCampus || 'Local'}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Skill Requested (from them)</label>
-          <input 
-            type="text"
-            required
-            className="w-full p-4 bg-slate-950/50 border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500 transition-all font-bold italic"
-            value={form.skill}
-            onChange={(e) => setForm({ ...form, skill: e.target.value })}
-          />
-        </div>
-
-        <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Skill Offered (from you)</label>
-          <input 
-            type="text"
-            required
-            placeholder="Ex: React Optimization"
-            className="w-full p-4 bg-slate-950/50 border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500 transition-all font-bold italic text-sm"
-            value={form.offer}
-            onChange={(e) => setForm({ ...form, offer: e.target.value })}
-          />
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Karma Stake</label>
-            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Available: {balance}</span>
-          </div>
-          <div className="relative">
-            <Star className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" size={18} />
-            <input 
-              type="number"
-              min="10"
-              required
-              className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500 transition-all font-black text-xl tracking-widest"
-              value={form.karmaStaked}
-              onChange={(e) => setForm({ ...form, karmaStaked: parseInt(e.target.value) })}
-            />
-          </div>
-          <p className="text-[9px] text-slate-500 italic font-bold uppercase tracking-widest">
-            * Min 10 Karma. Amount is locked in Escrow until completion or rejection.
-          </p>
-        </div>
-
-        <button 
-          type="submit"
-          disabled={loading}
-          className="w-full btn-primary py-5 font-black uppercase tracking-[0.3em] text-xs flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
-        >
-          {loading ? 'Transmitting...' : (
-            <>Send Nexus Request <ArrowRight size={18} /></>
-          )}
-        </button>
-      </form>
+      <Suspense fallback={<div className="glass-card p-10 text-center text-slate-500 animate-pulse">Initializing Nexus Handshake...</div>}>
+        <SwapRequestForm />
+      </Suspense>
 
       <div className="mt-8 flex justify-center">
         <div className="flex items-center gap-3 px-6 py-3 bg-white/5 rounded-full border border-white/10 shadow-inner">

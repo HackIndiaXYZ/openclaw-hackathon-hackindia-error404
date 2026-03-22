@@ -46,6 +46,18 @@ export const toast = {
     },
     ...options
   }),
+  warning: (msg: string, options?: any) => hotToast(msg, {
+    icon: '⚠️',
+    style: {
+      background: '#f59e0b',
+      color: '#fff',
+      fontWeight: 'bold',
+      textTransform: 'uppercase',
+      fontSize: '10px',
+      letterSpacing: '0.1em'
+    },
+    ...options
+  }),
 };
 
 export default toast;

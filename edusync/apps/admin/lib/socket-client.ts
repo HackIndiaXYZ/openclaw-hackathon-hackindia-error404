@@ -1,18 +1,32 @@
 import { io, Socket } from 'socket.io-client';
 
-let socket: Socket;
+let socketInstance: Socket | null = null;
 
-export const getSocket = () => {
-  if (!socket) {
-    socket = io(process.env.NEXT_PUBLIC_API_URL_ROOT || 'http://localhost:3001', {
+export const getSocket = (): Socket => {
+  if (typeof window === 'undefined') {
+    return { 
+      on: () => {}, 
+      off: () => {}, 
+      emit: () => {}, 
+      connected: false,
+      connect: () => {},
+      disconnect: () => {}
+    } as any;
+  }
+  if (!socketInstance) {
+    socketInstance = io(process.env.NEXT_PUBLIC_API_URL_ROOT || 'http://localhost:3001', {
       transports: ['websocket'],
-    });
-
-    socket.on('connect', () => {
-      console.log('🛡️ Admin: Connected to Nexus Socket Hub');
+      autoConnect: true
     });
   }
-  return socket;
+  return socketInstance;
 };
 
-export { socket };
+export const socket = typeof window !== 'undefined' ? getSocket() : { 
+  on: () => {}, 
+  off: () => {}, 
+  emit: () => {}, 
+  connected: false,
+  connect: () => {},
+  disconnect: () => {}
+} as any;

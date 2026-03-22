@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { socket } from '../lib/socket'; // Assuming socket client is exported here
+import { socket } from '../lib/socket-client'; // Using standardized socket-client
 import { useAuth } from './useAuth'; // Assuming useAuth provides current student/uid
 
 export interface Notification {
@@ -26,9 +26,9 @@ export function useNotifications() {
     setLoading(true);
     try {
       const res = await axios.get(`/api/v1/notifications?type=${type}`);
-      if (res.data.success) {
-        setNotifications(res.data.data.notifications);
-        setUnreadCount(res.data.data.unreadCount);
+      if (res.data.success && res.data.data) {
+        setNotifications(res.data.data?.notifications || []);
+        setUnreadCount(res.data.data?.unreadCount || 0);
       }
     } catch (err: any) {
       setError(err.message);

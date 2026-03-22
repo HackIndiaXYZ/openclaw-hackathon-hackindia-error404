@@ -186,7 +186,7 @@ export class AnalyticsService {
       startDate
     ]);
 
-    const series = flowResult.rows.map(r => ({
+    const series = flowResult.rows.map((r: any) => ({
       date: r.date,
       earned: parseFloat(r.earned || '0'),
       spent: parseFloat(r.spent || '0')
@@ -213,11 +213,198 @@ export class AnalyticsService {
       series,
       topEarners: topEarnersResult.rows,
       velocity: series.length > 0 
-        ? series.reduce((acc, c) => acc + c.earned, 0) / (series.reduce((acc, c) => acc + c.spent, 0) || 1)
+        ? series.reduce((acc: number, c: any) => acc + c.earned, 0) / (series.reduce((acc: number, c: any) => acc + c.spent, 0) || 1)
         : 1.0
     };
 
     await redis.set(cacheKey, JSON.stringify(result), { EX: 900 });
     return result;
+  }
+
+  /**
+   * Fetches utilization metrics for a specific campus pair (MOU).
+   * Aggregates from nexus_transparency_log and karma_ledger.
+   */
+  static async getMOUUtilization(adminCampus: string, partnerCampus: string, range: '7d' | '30d' | '90d' = '90d') {
+    const cacheKey = `analytics:mou:${adminCampus}:${partnerCampus}:${range}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const days = range === '7d' ? 7 : range === '90d' ? 90 : 30;
+    const startDate = new Date();
+    startDate.setUTCDate(startDate.getUTCDate() - days);
+
+    // 1. Swap Trend for this pair
+    const swapQuery = `
+      SELECT 
+        DATE(timestamp) as date,
+        COUNT(CASE WHEN action = 'swap_requested' THEN 1 END) as initiated,
+        COUNT(CASE WHEN action = 'swap_completed' THEN 1 END) as completed
+      FROM nexus_transparency_log
+      WHERE ((requester_campus_id = $1 AND responder_campus_id = $2)
+         OR (requester_campus_id = $2 AND responder_campus_id = $1))
+      AND timestamp >= $3
+      GROUP BY DATE(timestamp)
+      ORDER BY date ASC
+    `;
+    const swapResult = await nexusConnector.pg.query(swapQuery, [adminCampus, partnerCampus, startDate]);
+
+    // 2. Karma Flow for this pair
+    const karmaQuery = `
+      SELECT 
+        DATE(transaction_timestamp) as date,
+        SUM(amount) as total
+      FROM karma_ledger
+      WHERE ((sender_uid IN (SELECT firebase_uid FROM students WHERE campus = $1) AND receiver_uid IN (SELECT firebase_uid FROM students WHERE campus = $2))
+         OR (sender_uid IN (SELECT firebase_uid FROM students WHERE campus = $2) AND receiver_uid IN (SELECT firebase_uid FROM students WHERE campus = $1)))
+      AND transaction_timestamp >= $3
+      AND sender_uid NOT IN ($4, $5)
+      AND receiver_uid NOT IN ($4, $5)
+      GROUP BY DATE(transaction_timestamp)
+    `;
+    // Note: The subquery above assumes a 'students' table in Postgres, but EduSync uses Mongo for students.
+    // However, karma_ledger HAS institutional_node. We can use that if it maps to the other campus.
+    // Actually, Session 14 prompt says "karma_ledger has institutional_node column populated".
+    // But institutional_node is for the node where transaction occurred. 
+    // We need to know the SENDER's campus and RECEIVER's campus.
+    // Let's use nexus_transparency_log to find swap_ids for this pair, then find karma transactions for those swap_ids.
+    // That's more accurate for MOU ROI.
+    
+    const karmaPairQuery = `
+      SELECT SUM(amount) as total
+      FROM karma_ledger
+      WHERE transaction_reason LIKE 'Swap Completion:%'
+      AND sender_uid NOT IN ($4, $5)
+      AND receiver_uid NOT IN ($4, $5)
+      AND transaction_reason IN (
+        SELECT 'Swap Completion: ' || swap_id FROM nexus_transparency_log
+        WHERE ((requester_campus_id = $1 AND responder_campus_id = $2)
+           OR (requester_campus_id = $2 AND responder_campus_id = $1))
+        AND action = 'swap_completed'
+        AND timestamp >= $3
+      )
+    `;
+    const karmaResult = await nexusConnector.pg.query(karmaPairQuery, [adminCampus, partnerCampus, startDate, ...SYSTEM_ACCOUNTS]);
+    const totalKarmaExchanged = parseFloat(karmaResult.rows[0]?.total || '0');
+
+    const swapTrend = swapResult.rows.map((r: any) => ({
+      date: r.date,
+      initiated: parseInt(r.initiated || '0'),
+      completed: parseInt(r.completed || '0')
+    }));
+
+    const totalCompleted = swapTrend.reduce((acc: number, curr: any) => acc + curr.completed, 0);
+    const totalInitiated = swapTrend.reduce((acc: number, curr: any) => acc + curr.initiated, 0);
+    const completionRate = totalInitiated > 0 ? totalCompleted / totalInitiated : 1.0;
+
+    // Karma Velocity proxy for this pair (scaled relative to others)
+    const karmaVelocity = totalKarmaExchanged / (totalCompleted || 1) / 100; // Normalized
+
+    const utilization = {
+      swapTrend,
+      totalKarmaExchanged,
+      completionRate,
+      mouHealthScore: this.computeMOUHealthScore(completionRate, karmaVelocity, 1.0), // Baseline trend 1.0
+      generatedAt: new Date()
+    };
+
+    await redis.set(cacheKey, JSON.stringify(utilization), { EX: 600 });
+    return utilization;
+  }
+
+  /**
+   * Aggregates health metrics for all active MOUs for a campus.
+   */
+  static async getMOUHealthDashboard(adminCampus: string) {
+    const cacheKey = `analytics:mou-dashboard:${adminCampus}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    // 1. Fetch active MOUs
+    const mouQuery = `
+      SELECT * FROM mou_handshake_log 
+      WHERE (initiating_campus = $1 OR accepting_campus = $1)
+      AND "isActive" = true
+    `;
+    const mouResult = await nexusConnector.pg.query(mouQuery, [adminCampus]);
+    const activeMOUs = mouResult.rows;
+
+    // 2. Fetch aggregate data from transparency log
+    const aggregateQuery = `
+      SELECT 
+        COUNT(*) as total_swaps,
+        SUM(CASE WHEN timestamp >= NOW() - INTERVAL '30 days' THEN 1 ELSE 0 END) as swaps_30d
+      FROM nexus_transparency_log
+      WHERE (requester_campus_id = $1 OR responder_campus_id = $1)
+      AND action = 'swap_completed'
+    `;
+    const aggResult = await nexusConnector.pg.query(aggregateQuery, [adminCampus]);
+    const totalCrossSwapsAllTime = parseInt(aggResult.rows[0]?.total_swaps || '0');
+    const swapsLast30Days = parseInt(aggResult.rows[0]?.swaps_30d || '0');
+
+    // 3. Pending & Expired counts
+    const statusQuery = `
+      SELECT 
+        COUNT(CASE WHEN status = 'pending' AND accepting_campus = $1 THEN 1 END) as pending,
+        COUNT(CASE WHEN status = 'expired' THEN 1 END) as expired
+      FROM mou_handshake_log
+      WHERE initiating_campus = $1 OR accepting_campus = $1
+    `;
+    const statusResult = await nexusConnector.pg.query(statusQuery, [adminCampus]);
+    const totalPendingProposals = parseInt(statusResult.rows[0]?.pending || '0');
+    const totalExpiredMOUs = parseInt(statusResult.rows[0]?.expired || '0');
+
+    // 4. Karma exchanged across all MOUs
+    // (Existing karma query remains...)
+    const karmaSumQuery = `
+      SELECT SUM(amount) as total
+      FROM karma_ledger
+      WHERE institutional_node = $1
+      AND transaction_reason LIKE 'Swap Completion:%'
+      AND transaction_reason IN (
+        SELECT 'Swap Completion: ' || swap_id FROM nexus_transparency_log
+        WHERE requester_campus_id != responder_campus_id
+      )
+    `;
+    const karmaSumResult = await nexusConnector.pg.query(karmaSumQuery, [adminCampus]);
+    const totalKarmaExchangedAllTime = parseFloat(karmaSumResult.rows[0]?.total || '0');
+
+    // 5. Most Active Partner
+    const partnerQuery = `
+      SELECT 
+        CASE WHEN requester_campus_id = $1 THEN responder_campus_id ELSE requester_campus_id END as partner,
+        COUNT(*) as count
+      FROM nexus_transparency_log
+      WHERE (requester_campus_id = $1 OR responder_campus_id = $1)
+      AND action = 'swap_completed'
+      GROUP BY partner
+      ORDER BY count DESC
+      LIMIT 1
+    `;
+    const partnerResult = await nexusConnector.pg.query(partnerQuery, [adminCampus]);
+    const mostActiveMOUPartner = partnerResult.rows[0]?.partner || null;
+
+    // 6. Calculate average health score
+    let totalHealthScore = 0;
+    for (const mou of activeMOUs) {
+      const partner = mou.initiating_campus === adminCampus ? mou.accepting_campus : mou.initiating_campus;
+      const util = await this.getMOUUtilization(adminCampus, partner, '30d');
+      totalHealthScore += util.mouHealthScore;
+    }
+    const averageMOUHealthScore = activeMOUs.length > 0 ? Math.round(totalHealthScore / activeMOUs.length) : 0;
+
+    const dashboard = {
+      totalActiveMOUs: activeMOUs.length,
+      totalExpiredMOUs,
+      totalPendingProposals,
+      totalCrossSwapsAllTime,
+      totalKarmaExchangedAllTime,
+      averageMOUHealthScore,
+      swapsLast30Days,
+      mostActiveMOUPartner
+    };
+
+    await redis.set(cacheKey, JSON.stringify(dashboard), { EX: 900 });
+    return dashboard;
   }
 }

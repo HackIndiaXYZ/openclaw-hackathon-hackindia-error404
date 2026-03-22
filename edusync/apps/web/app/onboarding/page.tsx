@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Zap, Globe, Shield, ArrowRight, Check, Building2, User, Sparkles } from 'lucide-react';
-import apiClient from '../lib/api-client';
+import apiClient from '../../lib/api-client';
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);

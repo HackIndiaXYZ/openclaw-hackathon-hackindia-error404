@@ -1,4 +1,4 @@
-import { nexusConnector } from './nexus-connector.ts';
+import { nexusConnector } from './nexus-connector.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

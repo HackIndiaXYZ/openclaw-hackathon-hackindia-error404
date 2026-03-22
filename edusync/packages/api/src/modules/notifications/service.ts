@@ -12,6 +12,16 @@ export class NotificationService {
   static async create(recipientUid: string, type: NotificationType, payload: any) {
     const { title, body, actionUrl, relatedEntityId, relatedEntityType } = this.mapTypeToContent(type, payload);
 
+    // Guard: admin-targeted notifications must verify recipientUid has nexus_admin role
+    if (relatedEntityType === 'admin') {
+      const { StudentModel } = await import('@edusync/db');
+      const student = await StudentModel.findOne({ firebaseUid: recipientUid });
+      if (!student || (student.nexus as any)?.role !== 'nexus_admin') {
+        console.warn(`Blocked admin-targeted notification for non-admin user ${recipientUid}`);
+        return null;
+      }
+    }
+
     const doc = new NotificationModel({
       recipientUid,
       type,
@@ -218,6 +228,30 @@ export class NotificationService {
         title = 'Account Reinstated';
         body = 'Your account has been reinstated';
         actionUrl = '/dashboard';
+        relatedEntityType = 'admin';
+        break;
+      case 'mou_expiring_soon':
+        title = 'MOU Expiring Soon';
+        body = `MOU with ${p.partnerCampus} expires in ${p.daysRemaining} days`;
+        actionUrl = `/admin/mou/${p.mouId}`;
+        relatedEntityType = 'admin';
+        break;
+      case 'mou_expired':
+        title = 'MOU Expired';
+        body = `MOU with ${p.partnerCampus} has expired`;
+        actionUrl = `/admin/mou/${p.mouId}`;
+        relatedEntityType = 'admin';
+        break;
+      case 'mou_proposal_received':
+        title = 'New MOU Proposal';
+        body = `${p.campus} has sent a partnership proposal`;
+        actionUrl = '/admin/mou/proposals';
+        relatedEntityType = 'admin';
+        break;
+      case 'mou_proposal_accepted':
+        title = 'MOU Proposal Accepted';
+        body = `${p.campus} has accepted your partnership proposal`;
+        actionUrl = `/admin/mou/${p.mouId}`;
         relatedEntityType = 'admin';
         break;
     }

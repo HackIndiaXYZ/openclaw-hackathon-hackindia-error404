@@ -3,15 +3,24 @@ import apiClient from '../lib/api-client';
 
 export function useVault() {
   const [resources, setResources] = useState<any[]>([]);
+  const [totalResources, setTotalResources] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const fetchResources = async (query = '', aiSearch = false, fileType = '') => {
+  const fetchResources = async (filters: {
+    query?: string;
+    type?: string;
+    campus?: string;
+    nexusMode?: boolean;
+    verificationStatus?: string;
+    offset?: number;
+    limit?: number;
+  } = {}) => {
     setLoading(true);
     try {
-      const endpoint = aiSearch ? '/vault/search/ai' : '/vault';
-      const params = aiSearch ? { q: query } : { search: query, fileType };
-      const { data } = await apiClient.get(endpoint, { params });
+      const { data } = await apiClient.get('/vault', { params: { ...filters } });
       setResources(data.data || []);
+      setTotalResources(data.meta?.pagination?.total || 0);
+      return data;
     } catch (error) {
       console.error('Vault Retrieval Error:', error);
     } finally {
@@ -42,9 +51,7 @@ export function useVault() {
   const uploadAsset = async (formData: FormData) => {
     try {
       const { data } = await apiClient.post('/vault/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       return data;
     } catch (error: any) {
@@ -63,6 +70,7 @@ export function useVault() {
 
   return { 
     resources, 
+    totalResources,
     loading, 
     fetchResources, 
     getResourceById, 

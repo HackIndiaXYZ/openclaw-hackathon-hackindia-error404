@@ -17,7 +17,7 @@ import {
   Zap,
   ChevronRight
 } from 'lucide-react';
-import { useVault } from '../../../hooks/useVault';
+import { useVault } from '../../../../hooks/useVault';
 import Link from 'next/link';
 
 export default function ResourceDetailPage() {

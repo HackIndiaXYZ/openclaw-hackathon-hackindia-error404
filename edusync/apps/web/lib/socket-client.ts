@@ -1,18 +1,30 @@
 import { io, Socket } from 'socket.io-client';
 
-let socket: Socket;
+let socketInstance: Socket;
 
-export const getSocket = () => {
-  if (!socket) {
-    socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001', {
+export const getSocket = (): Socket => {
+  if (typeof window === 'undefined') {
+    return { 
+      connected: false, 
+      on: () => {}, 
+      off: () => {}, 
+      emit: () => {}, 
+      connect: () => {},
+      disconnect: () => {}
+    } as any;
+  }
+
+  if (!socketInstance) {
+    socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001', {
       transports: ['websocket'],
+      autoConnect: true
     });
-    
-    // Auto-join personal room on connect if user is authenticated
-    // Note: In a real app, you'd pass the UID from the session hook
-    socket.on('connect', () => {
-      console.log('⚡ Connected to Nexus Socket Hub');
+
+    socketInstance.on('connect', () => {
+      console.log('✨ Web: Connected to Nexus Socket Hub');
     });
   }
-  return socket;
+  return socketInstance;
 };
+
+export const socket = typeof window !== 'undefined' ? getSocket() : (null as any);

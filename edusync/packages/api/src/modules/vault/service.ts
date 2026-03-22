@@ -1,14 +1,16 @@
 import { ResourceModel } from '@edusync/db';
 import { KarmaService } from '../karma/service.js';
 import { NotificationService } from '../notifications/service.js';
-import { GeminiService } from '../../services/gemini-service.js';
-import { resourceScreenerQueue } from '../../jobs/resource-screener.js';
 import { AnalyticsService } from '../analytics/service.js';
+import { buildResourceVisibilityFilter } from '@edusync/shared';
+
+// Centralized Queues
+import { resourceScreenerQueue, meilisearchIndexerQueue } from '../../lib/queues.js';
 
 export class VaultService {
   /**
    * Upload a new resource to the Knowledge Vault.
-   * Sequence: Cloudinary Upload -> Mongo Create -> Karma Bonus (+10) -> AI Screening
+   * Sequence: Cloudinary Upload -> Mongo Create -> Karma Bonus (+10) -> AI Screening -> Meilisearch Index
    */
   static async uploadResource(data: {
     ownerUid: string;
@@ -17,12 +19,13 @@ export class VaultService {
     subject?: string;
     courseCode?: string;
     campusId: string;
-    fileUrl: string; // This will be the Cloudinary URL
+    collegeGroupId: string;
+    fileUrl: string;
     fileType: 'PDF' | 'Video' | 'Image' | 'Archive';
     karmaCost: number;
     tags?: string[];
   }) {
-    // 1. Enforce Server-Side Defaults
+    // 1. Create in MongoDB
     const newResource = await ResourceModel.create({
       ...data,
       verification: { 
@@ -33,14 +36,23 @@ export class VaultService {
       downloads: 0
     });
 
-    // 2. Trigger AI Screening (Fire-and-forget)
+    // 2. Trigger AI Screening (Asynchronous)
     try {
       await resourceScreenerQueue.add('screen-resource', { resourceId: newResource._id.toString() });
     } catch (queueErr) {
       console.error('⚠️ AI Screener Queue Trigger Failed:', queueErr);
     }
 
-    // 3. Grant Bounty: +10 Karma for contribution
+    // 3. Meilisearch Indexing
+    const indexingJob = await meilisearchIndexerQueue.add('index-resource', {
+      resourceId: newResource._id.toString(),
+      operation: 'upsert'
+    }, {
+      jobId: `index-resource:${newResource._id.toString()}`,
+      removeOnComplete: true
+    });
+
+    // 4. Grant Bounty: +10 Karma for contribution
     try {
       await KarmaService.recordTransaction({
         fromUid: 'NEXUS_TREASURY',
@@ -61,126 +73,113 @@ export class VaultService {
     await AnalyticsService.invalidateCache(data.campusId);
 
     console.log(`📦 Nexus Vault: New resource pending review - ${newResource.title} by @${data.ownerUid}`);
-    return newResource;
+    
+    return {
+      success: true,
+      data: newResource,
+      indexingJobId: indexingJob.id
+    };
   }
 
   /**
-   * Resubmit a resource after changes were requested by an admin.
-   * This resets the status but preserves the review history (attempts).
+   * Resubmit a resource after changes were requested.
    */
-  static async resubmitResource(id: string, ownerUid: string, data: {
-    title?: string;
-    description?: string;
-    tags?: string[];
-    karmaCost?: number;
-  }) {
+  static async resubmitResource(id: string, ownerUid: string, data: any) {
     const resource = await ResourceModel.findById(id);
     if (!resource) throw new Error('Resource not found');
-    if (resource.ownerUid !== ownerUid) throw new Error('Unauthorized: Not the resource owner');
-    if (resource.verification?.status !== 'changes_requested') {
-      throw new Error('Resubmission only allowed when changes are requested');
-    }
+    if (resource.ownerUid !== ownerUid) throw new Error('Unauthorized');
 
-    // 1. Update metadata and reset status
     Object.assign(resource, data);
     if (resource.verification) {
       resource.verification.status = 'pending';
-      resource.verification.changesRequested = null;
     }
-    // Note: reviewAttempts is NOT reset to 0; it was incremented during the change request
-    
     await resource.save();
 
-    // 2. Re-trigger AI Screening
+    // Re-trigger AI Screening
     await resourceScreenerQueue.add('screen-resource', { resourceId: resource._id.toString() });
 
-    return resource;
+    // Re-trigger Meilisearch Indexing
+    const job = await meilisearchIndexerQueue.add('index-resource', {
+      resourceId: resource._id.toString(),
+      operation: 'upsert'
+    }, {
+      jobId: `index-resource:${resource._id.toString()}`,
+      removeOnComplete: true
+    });
+
+    return { success: true, data: resource, indexingJobId: job.id };
   }
 
   /**
-   * List resources with visibility scoping and text search.
+   * List resources with shared visibility logic.
    */
   static async listResources(filters: {
-    campusId: string;
-    collegeGroupId?: string;
-    hasCrossCampus?: boolean;
+    studentProfile: any;
+    nexusMode?: boolean;
     search?: string;
     fileType?: string;
     limit?: number;
-    skip?: number;
+    offset?: number;
   }) {
-    // 1. Construct Visibility Filter (Core Privacy Requirement)
-    const visibilityFilter = {
-      $and: [
-        { 'verification.status': 'verified' }, // Only show verified assets in explorer
-        {
-          $or: [
-            { visibility: 'public' },
-            { visibility: 'campus_only', campusId: filters.campusId },
-            { visibility: 'college_group', collegeGroupId: filters.collegeGroupId },
-            ...(filters.hasCrossCampus ? [{ visibility: 'nexus_partners' }] : [])
-          ]
-        }
-      ]
+    const { studentProfile, nexusMode, limit = 20, offset = 0 } = filters;
+    
+    // 1. Get Shared Visibility Predicate
+    const visibility = buildResourceVisibilityFilter(
+      {
+        firebaseUid: studentProfile.firebaseUid,
+        campusId: studentProfile.campus,
+        collegeGroupId: studentProfile.collegeGroupId,
+        nexus: { crossCampusEnabled: studentProfile.nexus?.crossCampusEnabled || false },
+        moderation: studentProfile.moderation || { status: 'good_standing' }
+      },
+      nexusMode
+    );
+
+    // 2. Build MongoDB Query
+    const query: any = {
+      ...visibility.mongodbFilter,
+      'verification.status': 'verified'
     };
 
-    const query: any = { ...visibilityFilter };
-    if (filters.search) {
-      query.$text = { $search: filters.search };
-    }
-    if (filters.fileType) {
-      query.fileType = filters.fileType;
-    }
+    if (filters.search) query.$text = { $search: filters.search };
+    if (filters.fileType) query.fileType = filters.fileType;
 
     const resources = await ResourceModel.find(query)
       .sort({ createdAt: -1 })
-      .limit(filters.limit || 20)
-      .skip(filters.skip || 0);
+      .skip(offset)
+      .limit(limit);
 
     return resources;
   }
 
   /**
-   * Purchase/Unlock a resource.
-   * Logic: 100% P2P Transfer (Rounding to Integer). 
-   * Note: Node Skimming (5%) deferred to Phase 8 BullMQ job.
+   * Purchase/Unlock a resource (P2P Karma transfer)
    */
   static async purchaseResource(resourceId: string, buyerUid: string, buyerCampusId: string) {
     const resource = await ResourceModel.findById(resourceId);
     if (!resource) throw new Error('Resource not found');
 
-    // 1. Self-Purchase Guard: Uploader doesn't pay for their own asset
     if (resource.ownerUid === buyerUid) {
       return { success: true, fileUrl: resource.fileUrl, isOwner: true };
     }
 
-    // 2. Ledger Atomicity: Single 100% P2P Transfer
-    const baseCost = resource.karmaCost || 0;
-    const roundedCost = Math.round(baseCost);
-
-    if (roundedCost > 0) {
+    const cost = Math.round(resource.karmaCost || 0);
+    if (cost > 0) {
       await KarmaService.recordTransaction({
         fromUid: buyerUid,
         toUid: resource.ownerUid,
-        amount: roundedCost,
+        amount: cost,
         reason: `Vault Purchase: ${resource.title}`,
         institutionalNode: buyerCampusId
       });
 
-      // 3. Notifications
       await NotificationService.create(resource.ownerUid, 'karma_earned', {
-        amount: roundedCost,
+        amount: cost,
         reason: `Resource download: ${resource.title}`,
-        resourceId: resource._id
-      });
-      await NotificationService.create(buyerUid, 'karma_spent', {
-        amount: roundedCost,
-        reason: `Unlocked: ${resource.title}`,
         resourceId: resource._id
       });
     }
 
-    // 3. Increment Download Count
     resource.downloads += 1;
     await resource.save();
 
@@ -189,29 +188,5 @@ export class VaultService {
 
   static async getResourceById(id: string) {
     return ResourceModel.findById(id);
-  }
-
-  /**
-   * Admin verification of a resource.
-   */
-  static async verifyResource(id: string, verified: boolean) {
-    const resource = await ResourceModel.findByIdAndUpdate(id, { verified }, { new: true });
-    if (!resource) throw new Error('Resource not found');
-    return resource;
-  }
-
-  /**
-   * AI Semantic Search.
-   */
-  static async searchResourcesSemantic(query: string) {
-    const allResources = await ResourceModel.find({ 'verification.status': 'verified' }).sort({ createdAt: -1 }).limit(50);
-    const resourceData = allResources.map(r => ({
-      id: r._id.toString(),
-      title: r.title,
-      description: r.description || ""
-    }));
-
-    const matchingIds = await GeminiService.matchResourceIntent(query, resourceData);
-    return allResources.filter(r => matchingIds.includes(r._id.toString()));
   }
 }

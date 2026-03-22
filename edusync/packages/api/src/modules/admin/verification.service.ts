@@ -2,6 +2,7 @@ import { ResourceModel, nexusConnector } from '@edusync/db';
 import { KarmaService } from '../karma/service.js';
 import { NotificationService } from '../notifications/service.js';
 import { AnalyticsService } from '../analytics/service.js';
+import { meilisearchIndexerQueue } from '../../lib/queues.js';
 
 export interface OpenForReviewResult {
   success: boolean;
@@ -29,11 +30,10 @@ export class VerificationService {
       query._id = { $lt: cursor };
     }
 
-    // Sort priority: changes_requested, then flagged AI, then pending, then under_review last
     const resources = await ResourceModel.find(query)
       .sort({ 
-        'verification.status': 1, // pending=0, under_review=1, etc? No, custom sort needed for ideal experience
-        'verification.aiSafetyScore': 1, // Lower score = higher risk = show first
+        'verification.status': 1,
+        'verification.aiSafetyScore': 1,
         createdAt: -1 
       })
       .limit(limit);
@@ -56,7 +56,6 @@ export class VerificationService {
    * Atomics marking a resource as 'under_review' to prevent concurrent admin work.
    */
   static async openForReview(resourceId: string, adminUid: string): Promise<OpenForReviewResult> {
-    // 1. Check if already under review
     const resource = await ResourceModel.findById(resourceId);
     if (!resource) throw new Error('Resource not found');
 
@@ -72,7 +71,6 @@ export class VerificationService {
       };
     }
 
-    // 2. Atomic update: only if it was 'pending' or 'changes_requested'
     const updated = await ResourceModel.findOneAndUpdate(
       { 
         _id: resourceId, 
@@ -89,7 +87,6 @@ export class VerificationService {
     );
 
     if (!updated) {
-       // Someone else got it in the millisecond between findById and findOneAndUpdate
        const recheck = await ResourceModel.findById(resourceId);
        return { 
          success: false, 
@@ -147,6 +144,12 @@ export class VerificationService {
 
     await AnalyticsService.invalidateCache(adminCampus);
 
+    // Trigger Meilisearch Indexing (Partial Update)
+    await meilisearchIndexerQueue.add('update-resource-verification', {
+      resourceId,
+      status: 'verified'
+    });
+
     return resource;
   }
 
@@ -177,6 +180,12 @@ export class VerificationService {
       target_entity_id: resourceId,
       reason: reason,
       metadata: { resourceTitle: resource.title, category }
+    });
+
+    // Trigger Meilisearch Indexing (Partial Update)
+    await meilisearchIndexerQueue.add('update-resource-verification', {
+      resourceId,
+      status: 'rejected'
     });
 
     return resource;

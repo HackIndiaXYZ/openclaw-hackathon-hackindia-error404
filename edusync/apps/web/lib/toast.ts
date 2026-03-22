@@ -4,9 +4,16 @@
 export const toast = {
   success: (msg: string, options?: any) => {
     console.log(`✅ [TOAST]: ${msg}`);
-    // In a real app, this would trigger a global state update for a toast component
   },
-  error: (msg: string) => {
+  error: (msg: string, options?: any) => {
     console.error(`❌ [TOAST]: ${msg}`);
+  },
+  warning: (msg: string, options?: any) => {
+    console.warn(`⚠️ [TOAST]: ${msg}`);
+  },
+  info: (msg: string, options?: any) => {
+    console.info(`ℹ️ [TOAST]: ${msg}`);
   }
 };
+
+export default toast;

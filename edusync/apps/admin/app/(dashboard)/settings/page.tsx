@@ -67,7 +67,7 @@ export default function CampusSettingsPage() {
     setNewAdminEmail('');
   };
 
-  if (!settings && loading.settings) {
+  if (!settings) {
     return (
       <div className="h-[80vh] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>

@@ -1,9 +1,15 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, User, Zap, Mail, Building2, Star, Award, Clock, ExternalLink, Settings, Edit3, Shield } from 'lucide-react';
+import { Activity, User, Zap, Mail, Building2, Star, Award, Clock, ExternalLink, Settings, Edit3, Shield, BookOpen } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 
 export default function ProfilePage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const profile = {
     name: "Arjun Singh",
     email: "arjun.s@iitjammu.ac.id",
@@ -15,6 +21,8 @@ export default function ProfilePage() {
     trust: 98,
     activeSince: "Oct 2023"
   };
+
+  if (!mounted) return null;
 
   const activity = [
     { label: "Completed Skill Swap with Sneha R.", type: "swap", time: "2h ago" },

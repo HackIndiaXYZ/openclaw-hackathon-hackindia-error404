@@ -3,9 +3,26 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "./src/nexus-connector.ts",
-  "types": "./src/nexus-connector.ts",
+  "main": "./dist/nexus-connector.js",
+  "types": "./dist/nexus-connector.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/nexus-connector.d.ts",
+      "import": "./dist/nexus-connector.js",
+      "require": "./dist/nexus-connector.js"
+    }
+  },
   "dependencies": {
-    "mongoose": "latest"
+    "mongoose": "latest",
+    "dotenv": "latest"
+  },
+  "scripts": {
+    "build": "tsc",
+    "seed": "node --loader ts-node/esm ./src/seed.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.4.5"
   }
 }

@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Clock, Star, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { useNexus } from '../../../hooks/useNexus';
+import { useNexus } from '../../../../hooks/useNexus';
 
 export default function SwapOutboxPage() {
   const { swaps, fetchSwaps } = useNexus();

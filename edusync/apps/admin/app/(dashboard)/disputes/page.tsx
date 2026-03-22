@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldAlert, RefreshCcw, Landmark, Gavel, AlertCircle, Info } from 'lucide-react';
-import { useNexus } from '../../../../../web/hooks/useNexus';
+import { useNexus } from '../../../hooks/useNexus';
 
 export default function AdminDisputesPage() {
   const { swaps, fetchSwaps, adminOverride } = useNexus();

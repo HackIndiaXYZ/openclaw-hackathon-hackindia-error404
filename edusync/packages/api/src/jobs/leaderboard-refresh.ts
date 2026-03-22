@@ -1,19 +1,8 @@
-import { Queue, Worker } from 'bullmq';
 import { StudentModel } from '@edusync/db';
 import { KARMA_TIERS, KarmaTier, CampusSchema } from '@edusync/shared';
 import { NotificationService } from '../modules/notifications/service.js';
 import { redis } from '../services/redis-service.js';
 import { getIO } from '../socket.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const REDIS_PORT = Number(process.env.REDIS_PORT) || 6379;
-
-export const leaderboardQueue = new Queue('leaderboard-refresh', {
-  connection: { host: REDIS_HOST, port: REDIS_PORT }
-});
 
 const calculateTier = (karma: number): KarmaTier => {
   if (karma >= KARMA_TIERS.platinum.min) return 'platinum';
@@ -22,12 +11,12 @@ const calculateTier = (karma: number): KarmaTier => {
   return 'bronze';
 };
 
-/**
- * Leaderboard Refresh Job
- * Recomputes ranks across all campuses and global, updates Redis cache.
- */
-export const startLeaderboardRefreshWorker = () => {
-  const worker = new Worker('leaderboard-refresh', async (job) => {
+export class LeaderboardRefreshJob {
+  /**
+   * Leaderboard Refresh Job
+   * Recomputes ranks across all campuses and global, updates Redis cache.
+   */
+  static async handle(job: any) {
     console.log('🏆 Leaderboard Job: Starting Full Recompute...');
     
     // 1. Fetch all relevant student metrics
@@ -38,7 +27,6 @@ export const startLeaderboardRefreshWorker = () => {
 
     const campuses = CampusSchema.options;
     const updatedCampuses: string[] = [];
-    const globalTop100: any[] = [];
 
     // 2. Process each campus
     for (const campus of campuses) {
@@ -60,7 +48,7 @@ export const startLeaderboardRefreshWorker = () => {
         const previousRank = s.karmaRank ?? null;
         const previousTier = s.rankTier || 'bronze';
 
-        // Redis Payload (JSON string for zero-Mongo lookup display)
+        // Redis Payload
         const payload = JSON.stringify({
           uid: s.firebaseUid,
           name: s.name,
@@ -70,14 +58,13 @@ export const startLeaderboardRefreshWorker = () => {
           karma: s.karma,
           karmaRank: newRank,
           previousRank: previousRank,
-          swapsCompleted: 0 // In a real app, I'd aggregate this or denormalize it
+          swapsCompleted: 0
         });
 
         await redis.zAdd(redisKey, { score: s.karma, value: payload });
 
         // Notification Logic
         if (previousRank !== null && newRank < previousRank) {
-          // Rank Improved
           if (newTier !== previousTier && s.karma >= KARMA_TIERS[newTier].min) {
             await NotificationService.create(s.firebaseUid, 'karma_tier_upgrade', {
               newTier, previousTier, currentRank: newRank
@@ -121,7 +108,7 @@ export const startLeaderboardRefreshWorker = () => {
             campus: s.campus,
             rankTier: s.rankTier,
             karma: s.karma,
-            karmaRank: s.karmaRank // Campus rank
+            karmaRank: s.karmaRank
         });
         await redis.zAdd(globalKey, { score: s.karma, value: payload });
     }
@@ -133,27 +120,5 @@ export const startLeaderboardRefreshWorker = () => {
 
     console.log(`✅ Leaderboard Job: Recompute Complete for ${updatedCampuses.length} campuses.`);
     return { campuses: updatedCampuses.length, studentsProcessed: students.length };
-  }, {
-    connection: { host: REDIS_HOST, port: REDIS_PORT }
-  });
-
-  worker.on('failed', (job, err) => {
-    console.error(`❌ Leaderboard Job ${job?.id} failed:`, err);
-  });
-};
-
-/**
- * Register the recurring job
- */
-export const registerLeaderboardRefresh = async () => {
-  const repeatables = await leaderboardQueue.getRepeatableJobs();
-  for (const job of repeatables) {
-    await leaderboardQueue.removeRepeatableByKey(job.key);
   }
-
-  await leaderboardQueue.add('periodic-recompute', {}, {
-    repeat: { pattern: '*/5 * * * *' } // Every 5 minutes
-  });
-  
-  console.log('✅ Leaderboard Refresh: 5-minute schedule registered.');
-};
+}

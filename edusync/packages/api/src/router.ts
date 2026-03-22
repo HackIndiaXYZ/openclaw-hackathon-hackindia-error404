@@ -13,6 +13,8 @@ import { AnalyticsController } from './modules/analytics/controller.js';
 import { GuardianController } from './modules/guardian/controller.js';
 import { StudentDetailController } from './modules/admin/student-detail.controller.js';
 import { CampusSettingsController } from './modules/admin/campus-settings.controller.js';
+import { MOUController } from './modules/mou/controller.js';
+import { SearchController } from './modules/search/controller.js';
 import { institutionalAuth, adminOnly } from './middleware/auth.js';
 import { nexusGuard } from './middleware/nexus-guard.js';
 import { KarmaService } from './modules/karma/service.js';
@@ -128,9 +130,24 @@ router.get('/swaps/:id', institutionalAuth, SwapController.getSwapById);
 router.post('/ai/enhance', institutionalAuth, SkillController.enhanceDescription);
 router.post('/ai/match', institutionalAuth, SkillController.getSemanticMatches);
 
+// --- MOU CONSOLE (S24) ---
+router.get('/admin/mou/proposals', institutionalAuth, adminOnly, MOUController.getMOUList); // Lists all MOUs for dashboard summary
+router.get('/admin/mou', institutionalAuth, adminOnly, MOUController.getMOUList);
+router.get('/admin/mou/:mouId/log', institutionalAuth, adminOnly, MOUController.getTransparencyLog);
+router.get('/admin/mou/:mouId', institutionalAuth, adminOnly, MOUController.getMOUDetail);
+router.patch('/admin/mou/:mouId/accept', institutionalAuth, adminOnly, MOUController.acceptProposal);
+router.patch('/admin/mou/:mouId/suspend', institutionalAuth, adminOnly, MOUController.suspendMOU);
+router.patch('/admin/mou/:mouId/renew', institutionalAuth, adminOnly, MOUController.renewMOU);
+router.post('/admin/mou/:mouId/export', institutionalAuth, adminOnly, MOUController.requestExport);
+
 // --- NOTIFICATIONS HUB ---
 router.patch('/notifications/read-all', institutionalAuth, NotificationController.markAllRead);
 router.patch('/notifications/:id/read', institutionalAuth, NotificationController.markRead);
 router.get('/notifications', institutionalAuth, NotificationController.getNotifications);
+
+// --- SEARCH MAINTENANCE (Session 15) ---
+router.post('/admin/search/reindex', institutionalAuth, adminOnly, SearchController.bulkReindex);
+router.get('/admin/search/status', institutionalAuth, adminOnly, SearchController.getStats);
+router.get('/search/suggestions', SearchController.getSuggestions);
 
 export default router;

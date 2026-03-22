@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle, CardContent } from '../../../../components/ui/card';
+import { Button } from '../../../../components/ui/button';
+import { Badge } from '../../../../components/ui/badge';
 import { User, Shield, GraduationCap, Star, MessageSquare } from 'lucide-react';
-import { api } from '@/lib/api-client';
+import api from '../../../../lib/api-client';
 
 export default function StudentProfilePage() {
   const { id } = useParams();

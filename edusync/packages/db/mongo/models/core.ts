@@ -76,6 +76,13 @@ const SkillSwapRequestSchema = new Schema({
     notes: { type: String },
     flags: [{ type: Schema.Types.ObjectId, ref: 'Flag' }]
   }],
+  nexusLog: {
+    requesterCampus: { type: String, index: true },
+    responderCampus: { type: String, index: true },
+    adminAcknowledged: { type: Boolean, default: false },
+    transparencyLogId: { type: String, default: null },
+    mouId: { type: String, default: null }
+  }
 }, { timestamps: true });
 
 // Knowledge Vault Resource Schema

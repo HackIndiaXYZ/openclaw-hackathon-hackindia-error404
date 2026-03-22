@@ -12,7 +12,7 @@ export function useKarma() {
     try {
       const { data } = await apiClient.get('/karma/balance');
       if (data.success && data.data) {
-        setBalance(data.data.balance ?? 0);
+        setBalance(data.data?.balance ?? 0);
       } else {
         throw new Error(data.error?.message || 'Failed to sync with Nexus Ledger');
       }

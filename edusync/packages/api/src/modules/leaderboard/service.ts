@@ -45,6 +45,17 @@ export class LeaderboardService {
   }
 
   /**
+   * Alias for getStudentRank (used by StudentDetailService)
+   */
+  static async getMyRank(uid: string) {
+    // Note: getStudentRank needs campus, but getMyRank in StudentDetailService only passes UID.
+    // We'll fetch the student to get their campus first.
+    const student = await StudentModel.findOne({ firebaseUid: uid }, { campus: 1 }).lean();
+    if (!student) throw new Error('Student not found');
+    return this.getStudentRank(uid, student.campus);
+  }
+
+  /**
    * Fetches a specific student's rank and tier progress.
    */
   static async getStudentRank(uid: string, campus: string) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bell, 
   CheckCircle2, 
@@ -19,6 +19,9 @@ import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 
 export default function NotificationsPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { 
     notifications, 
     unreadCount, 
@@ -27,6 +30,8 @@ export default function NotificationsPage() {
     markAllRead, 
     fetchNotifications 
   } = useNotifications();
+
+  if (!mounted) return null;
   const [filter, setFilter] = useState<'all' | 'unread' | 'swap' | 'resource' | 'karma'>('all');
 
   const filteredNotifications = notifications.filter(n => {
@@ -48,6 +53,15 @@ export default function NotificationsPage() {
   const handleNotificationClick = (n: Notification) => {
     if (!n.isRead) markRead(n._id);
   };
+
+  if (loading && notifications.length === 0) {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center text-center bg-slate-950">
+         <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4" />
+         <p className="text-slate-500 font-black uppercase text-[10px] tracking-widest italic animate-pulse">Syncing Alerts...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8">
@@ -131,7 +145,7 @@ export default function NotificationsPage() {
                           {n.title}
                         </h4>
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                          <Clock size={12} /> {formatDistanceToNow(new Date(n.createdAt))} ago
+                          <Clock size={12} /> {n.createdAt ? formatDistanceToNow(new Date(n.createdAt)) : 'Institutional'} ago
                         </span>
                       </div>
                       <p className={`text-xs italic leading-relaxed ${n.isRead ? 'text-slate-500' : 'text-slate-300'}`}>
@@ -154,12 +168,6 @@ export default function NotificationsPage() {
         </AnimatePresence>
       </div>
 
-      {loading && notifications.length === 0 && (
-        <div className="py-24 flex flex-col items-center justify-center text-center">
-           <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4" />
-           <p className="text-slate-500 font-black uppercase text-[10px] tracking-widest italic animate-pulse">Syncing Alerts...</p>
-        </div>
-      )}
     </div>
   );
 }

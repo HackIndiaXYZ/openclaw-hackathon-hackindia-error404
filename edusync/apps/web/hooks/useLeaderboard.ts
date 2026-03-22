@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { socket } from '../lib/socket';
+import { socket } from '../lib/socket-client';
 import { useAuth } from './useAuth';
 import { LeaderboardStudent } from '@edusync/shared';
 
 export function useLeaderboard() {
   const { user } = useAuth();
   const [students, setStudents] = useState<LeaderboardStudent[]>([]);
-  const [myRankData, setMyRankData] = useState<any>(null);
+  const [myRankData, setMyRankData] = useState<any>({ rank: '??', karma: 0, tier: 'bronze', karmaToNextTier: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<'campus' | 'global'>('campus');
@@ -19,14 +19,14 @@ export function useLeaderboard() {
       const url = mode === 'global' ? '/api/v1/leaderboard/global' : '/api/v1/leaderboard';
       const res = await axios.get(url);
       
-      if (res.data.success) {
-        setStudents(res.data.data.students);
-        setLastComputed(new Date(res.data.data.lastComputed));
+      if (res.data.success && res.data.data) {
+        setStudents(res.data.data.students || []);
+        setLastComputed(res.data.data.lastComputed ? new Date(res.data.data.lastComputed) : null);
         if (mode === 'campus') {
           setMyRankData({
-            rank: res.data.data.requestingStudentRank,
-            score: res.data.data.requestingStudentScore,
-            totalStudents: res.data.data.totalStudents
+            rank: res.data.data.requestingStudentRank ?? '??',
+            score: res.data.data.requestingStudentScore ?? 0,
+            totalStudents: res.data.data.totalStudents ?? 0
           });
         }
       }
@@ -40,7 +40,7 @@ export function useLeaderboard() {
   const fetchMyRank = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/leaderboard/me');
-      if (res.data.success) {
+      if (res.data.success && res.data.data) {
         setMyRankData(res.data.data);
       }
     } catch (err) {

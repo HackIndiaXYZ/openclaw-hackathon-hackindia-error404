@@ -28,8 +28,22 @@ CREATE TABLE IF NOT EXISTS mou_handshake_log (
   signature_hash TEXT,
   valid_from DATE DEFAULT CURRENT_DATE,
   valid_until DATE,
-  "isActive" BOOLEAN DEFAULT TRUE
+  "isActive" BOOLEAN DEFAULT TRUE,
+  mou_reference_number VARCHAR(50),
+  credit_exchange_rate NUMERIC(5,2) DEFAULT 1.0,
+  max_cross_connections INTEGER DEFAULT 100,
+  data_share_level VARCHAR(20) DEFAULT 'profiles_only',
+  total_cross_swaps INTEGER DEFAULT 0,
+  last_activity_at TIMESTAMPTZ,
+  proposed_by VARCHAR(128),
+  accepted_by VARCHAR(128),
+  status VARCHAR(20) DEFAULT 'active'
 );
+
+CREATE INDEX IF NOT EXISTS idx_mou_initiating ON mou_handshake_log(initiating_campus);
+CREATE INDEX IF NOT EXISTS idx_mou_accepting ON mou_handshake_log(accepting_campus);
+CREATE INDEX IF NOT EXISTS idx_mou_status ON mou_handshake_log(status, "isActive");
+CREATE INDEX IF NOT EXISTS idx_mou_expiry ON mou_handshake_log(valid_until) WHERE valid_until IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS nexus_transparency_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

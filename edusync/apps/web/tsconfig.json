@@ -21,7 +21,13 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@edusync/shared": ["../../packages/shared/src/index.ts"],
+      "@edusync/db": ["../../packages/db/src/index.ts"]
+    }
   },
   "include": [
     "next-env.d.ts",

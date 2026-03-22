@@ -16,9 +16,9 @@ export class LeaderboardController {
         success: true, 
         data: { 
           ...data, 
-          requestingStudentRank: myRank.rank,
-          requestingStudentScore: myRank.karma,
-          totalStudents: myRank.totalStudents
+          requestingStudentRank: myRank?.rank || '??',
+          requestingStudentScore: myRank?.karma || 0,
+          totalStudents: myRank?.totalStudents || 0
         } 
       });
     } catch (err: any) {
