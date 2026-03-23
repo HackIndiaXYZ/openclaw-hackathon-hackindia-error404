@@ -3,22 +3,27 @@
  * Tests Promise.race timeout and MongoDB fallback behavior
  */
 
-import { SearchService } from '../../src/modules/search/search.service';
-import { studentsIndex } from '../../src/lib/meilisearch';
-import { StudentModel } from '@edusync/db';
-
-jest.mock('../../src/lib/meilisearch', () => ({
+import { jest } from '@jest/globals';
+jest.unstable_mockModule('../../src/lib/meilisearch', () => ({
   studentsIndex: {
+    search: jest.fn()
+  },
+  resourcesIndex: {
     search: jest.fn()
   }
 }));
 
-jest.mock('@edusync/db', () => ({
+jest.unstable_mockModule('@edusync/db', () => ({
   StudentModel: {
     find: jest.fn(),
     countDocuments: jest.fn()
-  }
+  },
+  ResourceModel: {}
 }));
+
+const { SearchService } = await import('../../src/modules/search/search.service.js');
+const { studentsIndex } = await import('../../src/lib/meilisearch');
+const { StudentModel } = await import('@edusync/db');
 
 describe('SearchService Fallback (PHASE 9 HARDENED)', () => {
   const requester = {
