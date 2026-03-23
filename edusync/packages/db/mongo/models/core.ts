@@ -54,6 +54,9 @@ const StudentProfileSchema = new Schema({
   }
 });
 
+// Full-Text Discovery Index for MongoDB Fallback
+StudentProfileSchema.index({ name: 'text', skills: 'text', department: 'text' });
+
 // Real-time Collaborative Session Data
 const SkillSwapRequestSchema = new Schema({
   requesterUid: { type: String, required: true, index: true },

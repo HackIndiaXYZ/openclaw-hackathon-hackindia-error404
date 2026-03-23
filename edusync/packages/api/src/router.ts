@@ -46,6 +46,7 @@ router.get('/health', (req: Request, res: Response) => {
 });
 
 // Profile & Skill Nexus
+router.get('/skills/list', SkillController.listSkills);
 router.get('/skills', SkillController.listSkills);
 router.get('/profile/:id', SkillController.getProfile);
 router.post('/profile/sync', institutionalAuth, SkillController.updateProfile);
