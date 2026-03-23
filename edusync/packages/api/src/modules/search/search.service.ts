@@ -74,6 +74,11 @@ export class SearchService {
 
       const results = await Promise.race([meilisearchPromise, timeoutPromise]);
 
+      // If Meilisearch is empty, fall back to MongoDB for resilience (it might be sync delay)
+      if (results.hits.length === 0 && query.length > 0) {
+        throw new Error('Meilisearch returned 0 results; falling back to MongoDB for higher discovery recall.');
+      }
+
       return {
         hits: results.hits,
         total: results.total,

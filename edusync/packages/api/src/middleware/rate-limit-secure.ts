@@ -52,8 +52,8 @@ export const userLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 1000,
   keyGenerator: (req: any) => {
-    // Use user ID if authenticated, fall back to IP
-    return (req as any).user?.sub || req.ip || 'anonymous';
+    // Phase 9 Security: Ensure key is always a string to prevent ERR_ERL_KEY_GEN_IPV6
+    return String((req as any).user?.sub || req.ip || 'anonymous');
   },
   message: { error: { code: 'USER_RATE_LIMITED', message: 'User rate limit exceeded' } },
   statusCode: 429,
@@ -72,7 +72,7 @@ export const heavyOpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10,
   keyGenerator: (req: any) => {
-    return (req as any).user?.sub || req.ip || 'anonymous';
+    return String((req as any).user?.sub || req.ip || 'anonymous');
   },
   message: { error: { code: 'HEAVY_OP_LIMITED', message: 'Too many heavy operations' } },
   statusCode: 429,
