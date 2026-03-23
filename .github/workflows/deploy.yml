@@ -73,25 +73,33 @@ jobs:
         continue-on-error: true
 
       # ⭐ CRITICAL: Smoke Tests (blocks deployment)
-      # Smoke Tests temporarily disabled to unblock CI
-      # - name: Run Smoke Tests
-      #   id: smoke-tests
-      #   run: npm --workspace=@edusync/api run test:smoke
-      #   timeout-minutes: 5
-      #   env:
-      #     API_URL: http://localhost:3001
-      #     DATABASE_URL: postgresql://postgres:postgres@localhost:5432/edusync_test
-      #     MONGODB_URI: mongodb://localhost:27017/edusync_test
-      #     REDIS_URL: redis://localhost:6379
-      #     MEILISEARCH_HOST: http://localhost:7700
-      #     MEILISEARCH_MASTER_KEY: test-key
-      #
-      # - name: Block deployment if tests fail
-      #   if: failure() && steps.smoke-tests.outcome == 'failure'
-      #   run: |
-      #     echo "❌ Smoke tests failed. Deployment blocked."
-      #     echo "Check logs above for details."
-      #     exit 1
+      - name: Seed Database
+        run: npm --workspace=@edusync/db run seed
+        env:
+          MONGO_URI: mongodb://localhost:27017/edusync_test
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: edusync_test
+
+      - name: Run Smoke Tests
+        id: smoke-tests
+        run: |
+          npm --workspace=@edusync/api run dev &
+          sleep 15
+          npm --workspace=@edusync/api run test:smoke
+        timeout-minutes: 5
+        env:
+          API_URL: http://localhost:3001/api/v1
+          NEXUS_JWT_SECRET: test-secret-key-2026
+          MONGO_URI: mongodb://localhost:27017/edusync_test
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: edusync_test
+          REDIS_URL: redis://localhost:6379
+          MEILISEARCH_HOST: http://localhost:7700
+          MEILISEARCH_MASTER_KEY: test-key
 
       - name: Build API
         run: npm --workspace=@edusync/api run build
@@ -106,15 +114,44 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to AWS ECS
-        run: |
-          echo "Deploying to production..."
-          # In a real environment, this would call AWS CLI or similar
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push to ECR
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build and push API
+          docker build -t $REGISTRY/edusync-api:latest packages/api/
+          docker push $REGISTRY/edusync-api:latest
+          
+          # Build and push Web
+          docker build -t $REGISTRY/edusync-web:latest apps/web/
+          docker push $REGISTRY/edusync-web:latest
+          
+          # Build and push Admin
+          docker build -t $REGISTRY/edusync-admin:latest apps/admin/
+          docker push $REGISTRY/edusync-admin:latest
+
+      - name: Update ECS Services
+        run: |
+          aws ecs update-service --cluster edusync-prod --service edusync-api --force-new-deployment
+          aws ecs update-service --cluster edusync-prod --service edusync-web --force-new-deployment
+          aws ecs update-service --cluster edusync-prod --service edusync-admin --force-new-deployment
