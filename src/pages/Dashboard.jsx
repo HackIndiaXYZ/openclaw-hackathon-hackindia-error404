@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Zap, Users, BookOpen, Shield, TrendingUp, ArrowUpRight, MessageSquare, Star, Info, Clock, Globe, Plus, ShieldCheck, Building2, ExternalLink } from 'lucide-react'
 import { API_URL } from '../config'
+import { DASHBOARD_STATS, NEXUS_ACTIVITY } from '../data/mockData'
 
 const Dashboard = ({ setActiveTab }) => {
   const [stats, setStats] = useState({
@@ -44,12 +45,7 @@ const Dashboard = ({ setActiveTab }) => {
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { icon: Zap, label: 'Active Swaps', value: '12', sub: '3 Inter-Campus', color: 'indigo' },
-          { icon: Star, label: 'Karma Balance', value: '1,240', sub: 'Global Rank: #42', color: 'amber' },
-          { icon: ShieldCheck, label: 'Verified Work', value: '25', sub: 'Admin Certified', color: 'emerald' },
-          { icon: Building2, label: 'Partner MOUs', value: '05', sub: 'Active Nexus', color: 'purple' },
-        ].map((stat, i) => (
+        {DASHBOARD_STATS.map((stat, i) => (
           <div key={i} className="glass-card p-6 border-white/5 bg-slate-900/40 relative group overflow-hidden hover:border-indigo-500/30 transition-all">
             <div className={`absolute top-0 right-0 p-6 opacity-[0.05] group-hover:scale-110 transition-transform text-${stat.color}-400`}>
                 <stat.icon size={80} />
@@ -58,7 +54,7 @@ const Dashboard = ({ setActiveTab }) => {
               <div className={`p-3 bg-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : 'purple'}-500/10 text-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : 'purple'}-400 rounded-xl`}>
                 <stat.icon size={24} />
               </div>
-              <span className={`text-[10px] font-black uppercase tracking-[0.2em] text-${stat.color === 'indigo' ? 'indigo' : stat.color === 'amber' ? 'amber' : stat.color === 'emerald' ? 'emerald' : 'purple'}-400`}>{stat.label}</span>
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] text-${stat.color}-400`}>{stat.label}</span>
             </div>
             <div className="text-4xl font-black text-white tracking-tighter">{stat.value}</div>
             <div className="text-xs text-slate-500 mt-3 flex items-center gap-1.5 font-medium uppercase tracking-widest italic">
@@ -78,11 +74,7 @@ const Dashboard = ({ setActiveTab }) => {
             Nexus Activity feed
           </h2>
           <div className="space-y-4">
-            {[
-              { user: "Sneha (IIT Delhi)", action: "Requested Skill Swap", time: "2m ago", badge: "Cross-Campus" },
-              { user: "Admin (IIT Jammu)", action: "Verified CS101 Notes", time: "1h ago", badge: "Auth" },
-              { user: "Aryan (IIT Bombay)", action: "Joined Engineering Nexus", time: "3h ago", badge: "Network" },
-            ].map((item, i) => (
+            {NEXUS_ACTIVITY.map((item, i) => (
               <div key={i} className="flex items-center justify-between py-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-all px-4 -mx-4 rounded-xl cursor-pointer group">
                 <div className="flex items-center gap-4">
                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">

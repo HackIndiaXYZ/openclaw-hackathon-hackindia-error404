@@ -2,14 +2,25 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Shield, AlertTriangle, CheckCircle, Users, Activity, BarChart, Settings, ArrowUpRight, Globe, Lock, Info, Zap, Building2, ShieldAlert, FileText, ExternalLink } from 'lucide-react'
 import { API_URL } from '../config'
+import { MOCK_REPORTS } from '../data/mockData'
 
 const Admin = () => {
-  const [healthData, setHealthData] = useState(null);
+  const [healthData, setHealthData] = useState({
+    uptime: '99.99%',
+    throughput: '8.4 GB/s',
+    nodes: [
+      { name: 'IIT Jammu (Master)', latency: '12ms', status: 'online' },
+      { name: 'IIT Delhi (Edge)', latency: '45ms', status: 'online' },
+      { name: 'MOU Cloud Broker', latency: '8ms', status: 'online' },
+    ]
+  });
 
   useEffect(() => {
     fetch(`${API_URL}/admin/system-health`)
       .then(res => res.json())
-      .then(setHealthData)
+      .then(data => {
+        if (data && data.uptime) setHealthData(data);
+      })
       .catch(err => console.error('Admin API Error:', err));
   }, []);
 
@@ -64,16 +75,12 @@ const Admin = () => {
                   <button className="text-xs font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors">View full history</button>
                </div>
                <div className="space-y-4">
-                 {[
-                   { id: '#431', reporter: "Aryan K.", target: "Misc. Notes", reason: "Potential Academic Dishonesty", status: "Urgent", type: "Vault" },
-                   { id: '#432', reporter: "Sneha R.", target: "Calc II Swap", reason: "Policy Violation #4.3", status: "Review", type: "Chat" },
-                   { id: '#433', reporter: "Admin Node", target: "IIT Delhi Bridge", reason: "MOU Compliance Audit", status: "Routine", type: "MOU" },
-                 ].map((item, i) => (
+                 {MOCK_REPORTS.map((item, i) => (
                    <div key={i} className="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer group">
                      <div className="flex items-center gap-6">
                         <span className="text-xs font-black text-slate-600 font-mono italic">{item.id}</span>
                         <div className="p-3 bg-white/5 rounded-2xl text-slate-400 group-hover:text-white group-hover:scale-110 transition-all">
-                           {item.type === 'Vault' ? <FileText size={20} /> : item.type === 'Chat' ? <Zap size={20} /> : <Building2 size={20} />}
+                           {item.id.includes('431') ? <FileText size={20} /> : <Zap size={20} />}
                         </div>
                         <div>
                            <p className="text-lg font-black text-white leading-none">{item.reason}</p>
@@ -82,9 +89,8 @@ const Admin = () => {
                      </div>
                      <div className="flex items-center gap-6">
                         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl ${
-                           item.status === 'Urgent' ? 'bg-red-500/20 text-red-500 border border-red-500/20' : 
-                           item.status === 'Review' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/20' : 
-                           'bg-indigo-500/20 text-indigo-500 border border-indigo-500/20'
+                           item.id.includes('431') ? 'bg-amber-500/20 text-amber-500 border border-amber-500/20' : 
+                           'bg-red-500/20 text-red-500 border border-red-500/20'
                         }`}>
                            {item.status}
                         </span>
@@ -184,11 +190,7 @@ const Admin = () => {
                   <Zap size={16} className="text-indigo-400" /> System Scalability Matrix
                </h3>
                <div className="space-y-6">
-                  {(healthData?.nodes || [
-                    { name: 'IIT Jammu (Master)', latency: '12ms', status: 'online' },
-                    { name: 'IIT Delhi (Edge)', latency: '45ms', status: 'online' },
-                    { name: 'MOU Cloud Broker', latency: '8ms', status: 'online' },
-                  ]).map((node, i) => (
+                  {healthData.nodes.map((node, i) => (
                     <div key={i} className="flex flex-col gap-2 p-3 bg-white/5 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all group">
                        <div className="flex justify-between items-center">
                           <span className="text-[10px] font-black text-white uppercase tracking-widest">{node.name}</span>

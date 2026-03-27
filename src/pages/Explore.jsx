@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Filter, Zap, Star, Shield, Globe, ArrowUpRight, Info, MapPin, Building2, AlertTriangle, Users } from 'lucide-react'
 import { API_URL } from '../config'
+import { MOCK_SKILLS } from '../data/mockData'
 
 const Explore = () => {
   const [nexusEnabled, setNexusEnabled] = useState(false)
@@ -14,11 +15,42 @@ const Explore = () => {
     fetch(`${API_URL}/skills/explore?nexusMode=${nexusEnabled}&skill=${searchQuery}`)
       .then(res => res.json())
       .then(data => {
-        setResults(data)
+        if (Array.isArray(data) && data.length > 0) {
+          setResults(data)
+        } else {
+          // Fallback to mock data if API returns empty or invalid
+          const filteredMock = MOCK_SKILLS.filter(s => 
+            s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            s.campus.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+          setResults(filteredMock.map(s => ({
+            id: s.id,
+            skill: s.title,
+            name: s.mentor,
+            campus: s.campus,
+            status: s.campus === 'IIT Jammu' ? 'LocalCampus' : 'NexusPartner',
+            karma: s.karma,
+            rating: s.rating
+          })));
+        }
         setIsLoading(false)
       })
       .catch(err => {
         console.error('Skill API Error:', err)
+        // Fallback to mock data on error
+        const filteredMock = MOCK_SKILLS.filter(s => 
+          s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+          s.campus.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setResults(filteredMock.map(s => ({
+          id: s.id,
+          skill: s.title,
+          name: s.mentor,
+          campus: s.campus,
+          status: s.campus === 'IIT Jammu' ? 'LocalCampus' : 'NexusPartner',
+          karma: s.karma,
+          rating: s.rating
+        })));
         setIsLoading(false)
       })
   }, [nexusEnabled, searchQuery])
@@ -106,10 +138,10 @@ const Explore = () => {
                 
                 <div className="flex items-center gap-6 mt-6 pt-6 border-t border-white/5">
                    <div className="flex items-center gap-1.5 font-black text-amber-400">
-                      <Star size={16} className="fill-current" /> 4.8
+                      <Star size={16} className="fill-current" /> {item.rating || 4.8}
                    </div>
                    <div className="flex items-center gap-1.5 font-black text-indigo-400">
-                      <Zap size={16} className="fill-current" /> 250 Karma
+                      <Zap size={16} className="fill-current" /> {item.karma || 250} Karma
                    </div>
                 </div>
 

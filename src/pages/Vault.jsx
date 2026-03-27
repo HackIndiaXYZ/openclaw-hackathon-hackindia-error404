@@ -1,19 +1,13 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, BookOpen, Download, Star, Shield, Filter, Zap, Building2, LayoutDashboard, Plus } from 'lucide-react'
-
-const RESOURCES = [
-  { id: 1, name: "CS101 Cheat Sheet", type: "PDF", downloads: 1.2, cost: 10, subject: "Computer Science", campus: "IIT Jammu", verified: true, level: "Sem 1", rating: 4.8 },
-  { id: 2, name: "Advanced Robotics Lab", type: "Docs", downloads: 0.5, cost: 25, subject: "Mechanical", campus: "IIT Bombay", nexus: true, verified: true, level: "Sem 6", rating: 5.0 },
-  { id: 3, name: "Discrete Math Notes", type: "Docs", downloads: 0.8, cost: 15, subject: "Mathematics", campus: "IIT Jammu", verified: false, level: "Sem 3", rating: 4.5 },
-  { id: 4, name: "VLSI Design Handbook", type: "PDF", downloads: 2.1, cost: 40, subject: "Electronics", campus: "IIT Delhi", nexus: true, verified: true, level: "Sem 5", rating: 4.9 },
-]
+import { MOCK_RESOURCES } from '../data/mockData'
 
 const Vault = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [filter, setFilter] = useState('All')
 
-  const filteredResources = RESOURCES.filter(res => (filter === 'All' || res.subject === filter) && res.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredResources = MOCK_RESOURCES.filter(res => (filter === 'All' || res.subject === filter) && res.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   return (
     <motion.div 
@@ -35,7 +29,7 @@ const Vault = () => {
               </div>
            </div>
            <div className="w-[1px] h-10 bg-white/10"></div>
-           <button className="btn-primary py-2.5 px-6 gap-2 text-xs font-black uppercase tracking-widest">
+           <button className="btn-primary py-2.5 px-6 gap-3 text-xs font-black uppercase tracking-widest">
               <Plus size={18} /> Upload Resource
            </button>
         </div>

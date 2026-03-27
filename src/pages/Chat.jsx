@@ -1,54 +1,73 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Shield, Settings, Plus, AlertTriangle, ShieldCheck, Zap, Globe, MessageCircle, MoreVertical } from 'lucide-react'
-import { io } from 'socket.io-client'
-import { SOCKET_URL } from '../config'
+import { supabase } from '../services/supabase'
+import { useAuthStore } from '../stores/useAuthStore'
+import { MOCK_CHATS, MOCK_CONVERSATIONS } from '../data/mockData'
 
 const Chat = () => {
-  const [messages, setMessages] = useState([
-    { id: 1, text: "Hey! 👋 My Prof at IIT Delhi approved the MOU exchange credits! I've uploaded the VLSI CMOS layout workbook to the vault for you. Available for a session soon?", sender: 'Sneha', time: '10:00 AM' },
-    { id: 2, text: "Perfect! I just saw the notification. I've prepped the React architecture session for you in return. Wednesday 3PM works for me! 🚀", sender: 'me', time: '10:05 AM' }
-  ]);
-  const [inputText, setInputText] = useState('');
-  const [moderationAlert, setModerationAlert] = useState(null);
-  const socketRef = useRef();
-  const chatEndRef = useRef();
+  const { user } = useAuthStore()
+  const [messages, setMessages] = useState(MOCK_CHATS)
+  const [inputText, setInputText] = useState('')
+  const [activeConvId, setActiveConvId] = useState('sneha')
+  const [moderationAlert, setModerationAlert] = useState(null)
+  const chatEndRef = useRef()
+
+  const activePeer = MOCK_CONVERSATIONS.find(c => c.id === activeConvId) || MOCK_CONVERSATIONS[0]
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL);
-    
-    socketRef.current.emit('join_collab', 'room_iitj_iitd_001');
+    // 1. Fetch existing messages for the active conversation
+    const fetchMessages = async () => {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('room_id', `room_${activeConvId}`)
+        .order('created_at', { ascending: true })
+      
+      if (data && data.length > 0) setMessages(data)
+    }
 
-    socketRef.current.on('receive_message', (data) => {
-      setMessages(prev => [...prev, { id: Date.now(), text: data.content, sender: data.sender, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
-    });
+    fetchMessages()
 
-    socketRef.current.on('moderation_alert', (data) => {
-      setModerationAlert(data.message);
-      setTimeout(() => setModerationAlert(null), 5000);
-    });
+    // 2. Subscribe to new messages using Realtime
+    const messageSubscription = supabase
+      .channel(`room_${activeConvId}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'messages',
+        filter: `room_id=eq.room_${activeConvId}`
+      }, (payload) => {
+        setMessages(prev => [...prev, payload.new])
+      })
+      .subscribe()
 
-    return () => socketRef.current.disconnect();
-  }, []);
+    return () => {
+      supabase.removeChannel(messageSubscription)
+    }
+  }, [activeConvId])
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
+  const handleSendMessage = async (e) => {
+    e.preventDefault()
+    if (!inputText.trim()) return
 
-    const msgData = {
-      content: inputText,
-      sender: 'me',
-      roomId: 'room_iitj_iitd_001'
-    };
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        content: inputText,
+        sender_id: user.id,
+        sender_name: user.user_metadata.full_name || 'Anonymous',
+        room_id: `room_${activeConvId}`,
+        created_at: new Date().toISOString()
+      })
 
-    socketRef.current.emit('send_message', msgData);
-    setMessages(prev => [...prev, { id: Date.now(), text: inputText, sender: 'me', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
-    setInputText('');
-  };
+    if (error) console.error('Error sending message:', error)
+    setInputText('')
+  }
 
   return (
     <motion.div 
@@ -67,18 +86,18 @@ const Chat = () => {
         </div>
         
         <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-          {[
-            { name: 'Sneha (IIT Delhi)', status: 'Nexus Link Active', online: true, active: true },
-            { name: 'Aryan K. (IIT Jammu)', status: 'Local Peer', online: true },
-            { name: 'Dr. Vikram (IITD)', status: 'Nexus Admin Node', online: false },
-          ].map((peer, i) => (
-            <div key={i} className={`p-5 rounded-2xl cursor-pointer transition-all flex items-center gap-5 border ${peer.active ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl' : 'hover:bg-white/5 text-slate-400 border-white/5'}`}>
+          {MOCK_CONVERSATIONS.map((peer, i) => (
+            <div 
+              key={peer.id} 
+              onClick={() => setActiveConvId(peer.id)}
+              className={`p-5 rounded-2xl cursor-pointer transition-all flex items-center gap-5 border ${activeConvId === peer.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl' : 'hover:bg-white/5 text-slate-400 border-white/5'}`}
+            >
               <div className="relative">
                 <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${peer.name}`} className="w-12 h-12 rounded-2xl border-2 border-white/10" />
                 <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-4 border-slate-950 ${peer.online ? 'bg-emerald-500' : 'bg-slate-700'}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-black text-sm truncate uppercase tracking-tighter text-white">{peer.name}</div>
+                <div className={`font-black text-sm truncate uppercase tracking-tighter ${activeConvId === peer.id ? 'text-white' : 'text-slate-200'}`}>{peer.name}</div>
                 <div className="text-[10px] font-black uppercase tracking-widest mt-0.5 opacity-60">{peer.status}</div>
               </div>
             </div>
@@ -91,15 +110,15 @@ const Chat = () => {
         <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5 backdrop-blur-3xl shadow-lg relative z-10">
           <div className="flex items-center gap-5">
              <div className="relative">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha (IIT Delhi)" className="w-14 h-14 rounded-2xl border-2 border-indigo-500/50" />
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-4 border-slate-950"></div>
+                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${activePeer.name}`} className="w-14 h-14 rounded-2xl border-2 border-indigo-500/50" />
+                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-4 border-slate-950 ${activePeer.online ? 'bg-emerald-500' : 'bg-slate-700'}`}></div>
              </div>
              <div>
                <div className="font-black text-white text-xl tracking-tight flex items-center gap-3">
-                 Sneha (IIT Delhi) <span className="nexus-badge animate-pulse">MOU Bridge Link</span>
+                 {activePeer.name} <span className="nexus-badge animate-pulse">{activePeer.id === 'sneha' ? 'MOU Bridge Link' : 'Local Node'}</span>
                </div>
                <div className="text-xs text-indigo-400 font-black flex items-center gap-2 mt-1 uppercase tracking-widest">
-                 <ShieldCheck size={14} className="text-emerald-500" /> Active Skill-Swap: VLSI Design ↔ React architecture
+                 <ShieldCheck size={14} className="text-emerald-500" /> {activePeer.id === 'sneha' ? 'Active Skill-Swap: VLSI Design ↔ React architecture' : 'Security Clearance: Verified'}
                </div>
              </div>
           </div>
@@ -118,11 +137,11 @@ const Chat = () => {
           </AnimatePresence>
 
           {messages.map((msg, i) => (
-            <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`p-5 rounded-3xl max-w-lg shadow-2xl ${msg.sender === 'me' ? 'bg-indigo-600 text-white rounded-tr-none border border-indigo-500' : 'bg-white/10 text-slate-200 rounded-tl-none border border-white/10 backdrop-blur-md'}`}>
-                <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                <div className={`text-[9px] font-black uppercase tracking-widest mt-3 opacity-60 ${msg.sender === 'me' ? 'text-indigo-200' : 'text-slate-500'}`}>
-                  {msg.sender === 'me' ? 'Arjun' : msg.sender} • {msg.time}
+            <div key={msg.id || i} className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
+              <div className={`p-5 rounded-3xl max-w-lg shadow-2xl ${msg.sender_id === user?.id ? 'bg-indigo-600 text-white rounded-tr-none border border-indigo-500' : 'bg-white/10 text-slate-200 rounded-tl-none border border-white/10 backdrop-blur-md'}`}>
+                <p className="text-sm font-medium leading-relaxed">{msg.content || msg.text}</p>
+                <div className={`text-[9px] font-black uppercase tracking-widest mt-3 opacity-60 ${msg.sender_id === user?.id ? 'text-indigo-200' : 'text-slate-500'}`}>
+                  {msg.sender_name || msg.sender} • {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : msg.time}
                 </div>
               </div>
             </div>
