@@ -10,6 +10,7 @@ import Button from '../components/ui/Button'
 import Avatar from '../components/ui/Avatar'
 import Badge from '../components/ui/Badge'
 import ProgressBar from '../components/ui/ProgressBar'
+import { MOCK_CAMPUSES } from '../data/mockData'
 
 const STEPS = 5
 
@@ -27,7 +28,8 @@ export default function Onboarding() {
       yearOfStudy: '',
       bio: '',
       skillsTeach: [],
-      skillsLearn: []
+      skillsLearn: [],
+      campusId: profile?.campus_id || ''
     }
   })
 
@@ -84,15 +86,17 @@ export default function Onboarding() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
           full_name: data.fullName,
           department: data.department,
           year_of_study: parseInt(data.yearOfStudy),
           bio: data.bio,
           avatar_url: data.avatarUrl,
-          onboarding_completed: true
+          campus_id: data.campusId,
+          onboarding_completed: true,
+          karma_balance: profile?.karma_balance ?? 100
         })
-        .eq('id', user.id)
 
       if (error) throw error
 
@@ -225,6 +229,16 @@ export default function Onboarding() {
                        </select>
                      </div>
                    </div>
+
+                   {!profile?.campus_id && (
+                     <div>
+                       <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Campus</label>
+                       <select {...register('campusId', { required: true })} className="w-full h-12 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 font-bold text-slate-700 focus:border-indigo-600 outline-none appearance-none">
+                         <option value="">Select your institution...</option>
+                         {MOCK_CAMPUSES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                       </select>
+                     </div>
+                   )}
 
                    <div>
                      <div className="flex justify-between items-end mb-2">
