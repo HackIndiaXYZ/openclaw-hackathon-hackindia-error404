@@ -2,14 +2,12 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Eye, EyeOff, LayoutDashboard, Compass, BookOpen, ArrowRight, Github } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { toast } from 'sonner'
 import { MOCK_CAMPUSES, MOCK_SKILLS } from '../data/mockData'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
-import Avatar from '../components/ui/Avatar'
 
 export default function Login() {
   const [isSignIn, setIsSignIn] = useState(true)
@@ -23,7 +21,7 @@ export default function Login() {
   const handleSignIn = async (data) => {
     setLoading(true)
     try {
-      const { data: { user, session }, error } = await supabase.auth.signInWithPassword({
+      const { data: { user }, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password
       })
@@ -206,12 +204,12 @@ export default function Login() {
                 </motion.form>
              ) : (
                 <motion.form 
-                  key="signup"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  onSubmit={handleSubmit(handleSignUp)}
-                  className="space-y-6"
+                   key="signup"
+                   initial={{ opacity: 0, x: 10 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   exit={{ opacity: 0, x: -10 }}
+                   onSubmit={handleSubmit(handleSignUp)}
+                   className="space-y-6"
                 >
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">Full Name</label>

@@ -1,23 +1,19 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { X, ChevronRight, Zap, Info, Calendar, Clock, Globe, User, Send, CheckCircle2 } from 'lucide-react'
+import { X, ChevronRight, Zap, Info, Globe, User, Send, CheckCircle2 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { supabase } from '../../lib/supabase'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
 import Button from '../ui/Button'
-import Card from '../ui/Card'
 import Badge from '../ui/Badge'
-import Avatar from '../ui/Avatar'
-
-const STEPS = 4
 
 export default function SwapRequestModal({ isOpen, onClose, skill }) {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const { profile, user } = useAuthStore()
-  const { register, handleSubmit, watch, formState: { errors } } = useForm()
+  const { register, handleSubmit, formState: { errors } } = useForm()
 
   if (!isOpen) return null
 
@@ -29,7 +25,6 @@ export default function SwapRequestModal({ isOpen, onClose, skill }) {
   const onSubmit = async (data) => {
     setLoading(true)
     try {
-      // 1. Create skill request
       const { error: requestError } = await supabase.from('skill_requests').insert([
         { 
           skill_id: skill.id, 
@@ -41,7 +36,6 @@ export default function SwapRequestModal({ isOpen, onClose, skill }) {
       ])
       if (requestError) throw requestError
 
-      // 2. Insert notification for mentor
       await supabase.from('notifications').insert([
         { 
           user_id: skill.mentor_id, 

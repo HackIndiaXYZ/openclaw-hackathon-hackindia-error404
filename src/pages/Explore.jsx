@@ -25,7 +25,6 @@ export default function Explore() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    status,
     isLoading
   } = useInfiniteQuery({
     queryKey: ['skills', nexusMode, category, search, sort],

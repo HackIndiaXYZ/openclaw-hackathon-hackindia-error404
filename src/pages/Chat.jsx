@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/authStore'
 import { supabase } from '../lib/supabase'
-import { Send, ChevronLeft, Info, Zap, Calendar, MoreVertical, Search, MessageSquare, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { Send, ChevronLeft, Info, Zap, MoreVertical, Search, MessageSquare, ShieldCheck } from 'lucide-react'
 import { formatTimeAgo } from '../utils/formatters'
 import Avatar from '../components/ui/Avatar'
 import Button from '../components/ui/Button'
@@ -12,56 +12,16 @@ import Spinner from '../components/ui/Spinner'
 
 export default function Chat() {
   const { conversationId } = useParams()
-  const { user, profile } = useAuthStore()
+  const { user } = useAuthStore()
   const navigate = useNavigate()
   const [conversations, setConversations] = useState([])
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [activeChat, setActiveChat] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [typing, setTyping] = useState(false)
   const messagesEndRef = useRef(null)
 
-  useEffect(() => {
-    if (!user) return
-    fetchConversations()
-    
-    // Subscribe to NEW messages
-    const channel = supabase
-      .channel('public:messages')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'messages'
-      }, (payload) => {
-        if (payload.new.conversation_id === conversationId) {
-          setMessages(prev => [...prev, payload.new])
-        }
-        fetchConversations() // update previews
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user, conversationId])
-
-  useEffect(() => {
-    if (conversationId) {
-      fetchMessages(conversationId)
-      fetchActiveChat(conversationId)
-    }
-  }, [conversationId])
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     const { data, error } = await supabase
       .from('conversations')
       .select('*, profiles:participant_ids(*)')
@@ -69,7 +29,6 @@ export default function Chat() {
       .order('last_message_at', { ascending: false })
 
     if (!error) {
-      // Map profiles to get the partner
       const formatted = data.map(conv => {
         const partner = conv.profiles.find(p => p.id !== user.id)
         return { ...conv, partner }
@@ -77,9 +36,9 @@ export default function Chat() {
       setConversations(formatted)
       setLoading(false)
     }
-  }
+  }, [user.id])
 
-  const fetchActiveChat = async (id) => {
+  const fetchActiveChat = useCallback(async (id) => {
     const { data, error } = await supabase
       .from('conversations')
       .select('*, profiles:participant_ids(*)')
@@ -90,9 +49,9 @@ export default function Chat() {
        const partner = data.profiles.find(p => p.id !== user.id)
        setActiveChat({ ...data, partner })
     }
-  }
+  }, [user.id])
 
-  const fetchMessages = async (id) => {
+  const fetchMessages = useCallback(async (id) => {
     const { data, error } = await supabase
       .from('messages')
       .select('*')
@@ -102,7 +61,45 @@ export default function Chat() {
     if (!error) {
       setMessages(data)
     }
-  }
+  }, [])
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
+
+  useEffect(() => {
+    if (!user) return
+    fetchConversations()
+    
+    const channel = supabase
+      .channel('public:messages')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'messages'
+      }, (payload) => {
+        if (payload.new.conversation_id === conversationId) {
+          setMessages(prev => [...prev, payload.new])
+        }
+        fetchConversations() 
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, conversationId, fetchConversations])
+
+  useEffect(() => {
+    if (conversationId) {
+      fetchMessages(conversationId)
+      fetchActiveChat(conversationId)
+    }
+  }, [conversationId, fetchMessages, fetchActiveChat])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, scrollToBottom])
 
   const handleSendMessage = async (e) => {
     e.preventDefault()
@@ -114,8 +111,6 @@ export default function Chat() {
       content: newMessage.trim()
     }
 
-    // Update locally for speed (Optimistic UI)
-    // setMessages(prev => [...prev, { ...msg, created_at: new Date().toISOString(), id: 'temp-'+Date.now() }])
     setNewMessage('')
 
     const { error } = await supabase
@@ -125,7 +120,6 @@ export default function Chat() {
     if (error) {
       console.error(error)
     } else {
-       // update last message in conversation
        await supabase.from('conversations')
           .update({ 
             last_message: msg.content, 
@@ -139,7 +133,6 @@ export default function Chat() {
 
   return (
     <div className="flex h-[calc(100vh-64px)] overflow-hidden font-sans bg-slate-50 relative">
-       {/* PANEL 1: SIDEBAR */}
        <div className={`${conversationId ? 'hidden md:flex' : 'flex'} w-full md:w-[350px] flex-col bg-white border-r border-slate-200 z-20`}>
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
              <h2 className="text-2xl font-outfit font-black text-slate-900 uppercase tracking-tighter">Messages</h2>
@@ -185,11 +178,9 @@ export default function Chat() {
           </div>
        </div>
 
-       {/* PANEL 2: CHAT AREA */}
        <div className={`${conversationId ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-slate-50 relative`}>
           {activeChat ? (
              <>
-               {/* Chat Header */}
                <div className="px-6 h-[80px] flex items-center justify-between bg-white border-b border-slate-200 z-10 shadow-sm relative overflow-hidden">
                   <div className="flex items-center gap-4">
                      <button onClick={() => navigate('/chat')} className="md:hidden p-2 text-slate-400 hover:text-indigo-600">
@@ -209,7 +200,6 @@ export default function Chat() {
                   </div>
                </div>
 
-               {/* Messages Area */}
                <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar scroll-smooth bg-white/40">
                   {activeChat.is_nexus_bridge && (
                     <div className="flex justify-center mb-8">
@@ -219,7 +209,7 @@ export default function Chat() {
                     </div>
                   )}
 
-                  {messages.map((msg, i) => {
+                  {messages.map((msg) => {
                      const isMine = msg.sender_id === user.id
                      return (
                         <motion.div 
@@ -240,7 +230,6 @@ export default function Chat() {
                   <div ref={messagesEndRef} />
                </div>
 
-               {/* Input Area */}
                <div className="p-6 bg-white border-t border-slate-200">
                   <form onSubmit={handleSendMessage} className="relative flex items-center gap-3">
                      <input 
@@ -272,7 +261,6 @@ export default function Chat() {
           )}
        </div>
 
-       {/* PANEL 3: DETAIL PANEL (Desktop) */}
        {conversationId && activeChat && (
           <div className="hidden lg:flex w-[280px] bg-white border-l border-slate-200 flex-col items-center py-12 px-6 overflow-y-auto no-scrollbar">
              <Avatar src={activeChat.partner?.avatar_url} name={activeChat.partner?.full_name} size="xl" className="border-8 border-slate-50 shadow-2xl shadow-slate-200 mb-6" />

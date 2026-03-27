@@ -1,16 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import { supabase } from '../lib/supabase'
 import { Zap, BookOpen, Star, Building2, Bell, ArrowRight, CheckCircle, Info } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { MOCK_SKILLS } from '../data/mockData'
 import SkillCard from '../components/shared/SkillCard'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
-import Avatar from '../components/ui/Avatar'
 import Spinner from '../components/ui/Spinner'
 
 export default function Dashboard() {
@@ -18,7 +15,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
 
   // REAL SUPABASE QUERIES
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats } = useQuery({
     queryKey: ['dashboard-stats', user?.id],
     queryFn: async () => {
       // 1. Swaps count

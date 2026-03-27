@@ -7,7 +7,7 @@ import CampusBadge from './CampusBadge'
 import KarmaChip from './KarmaChip'
 
 export default function SkillCard({ skill, onClick, onAction }) {
-  const { title, category, mentor, mentor_id, campus, campus_id, karma_cost, avg_rating, total_reviews, is_nexus, tags } = skill
+  const { title, category, mentor, campus, karma_cost, avg_rating, total_reviews, is_nexus, tags } = skill
 
   return (
     <Card className="flex flex-col h-full group">

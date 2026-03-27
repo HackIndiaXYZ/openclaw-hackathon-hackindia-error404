@@ -2,7 +2,6 @@ import { Star } from 'lucide-react'
 
 export default function StarRating({ rating, count }) {
   const fullStars = Math.floor(rating || 0)
-  const hasHalf = (rating % 1) >= 0.5
 
   return (
     <div className="flex items-center gap-2">

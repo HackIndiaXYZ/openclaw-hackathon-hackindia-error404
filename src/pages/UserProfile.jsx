@@ -1,15 +1,15 @@
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
-import { Zap, Star, Shield, BookOpen, MessageSquare, ArrowLeft, MapPin, CheckCircle } from 'lucide-react'
+import { Zap, Star, Shield, BookOpen, MessageSquare, CheckCircle } from 'lucide-react'
 import Avatar from '../components/ui/Avatar'
-import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import SkillCard from '../components/shared/SkillCard'
 import CampusBadge from '../components/shared/CampusBadge'
+import Spinner from '../components/ui/Spinner'
 
 export default function UserProfile() {
   const { userId } = useParams()

@@ -1,16 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
-import { Edit, Zap, Star, Shield, BookOpen, Clock, Settings, LogOut, ChevronRight, MessageSquare, AlertTriangle } from 'lucide-react'
+import { Edit, Zap, Star, Shield, BookOpen, LogOut } from 'lucide-react'
 import Avatar from '../components/ui/Avatar'
-import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import SkillCard from '../components/shared/SkillCard'
 import CampusBadge from '../components/shared/CampusBadge'
-import KarmaChip from '../components/shared/KarmaChip'
 
 export default function Profile() {
   const { profile, user, signOut } = useAuthStore()

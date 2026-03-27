@@ -1,17 +1,14 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
-import { ArrowLeft, Star, Zap, Globe, MapPin, Calendar, Clock, MessageSquare, AlertTriangle, ShieldCheck } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
+import { ArrowLeft, Star, Zap, Globe, MapPin, Calendar, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { useState, useMemo } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
 import Avatar from '../components/ui/Avatar'
-import CampusBadge from '../components/shared/CampusBadge'
-import KarmaChip from '../components/shared/KarmaChip'
 import StarRating from '../components/shared/StarRating'
 import SwapRequestModal from '../components/shared/SwapRequestModal'
 
@@ -28,7 +25,7 @@ export default function SkillDetail() {
         .from('skills')
         .select(`
           *,
-          mentor:profiles!mentor_id(id, full_name, avatar_url, bio, department, year_of_study, karma_balance, campuses(name)),
+          mentor:profiles!mentor_id(id, full_name, avatar_url, bio, department, year_of_study, karma_balance, created_at, campuses(name)),
           campus:campuses(*)
         `)
         .eq('id', skillId)
@@ -51,6 +48,11 @@ export default function SkillDetail() {
     },
     enabled: !!skillId
   })
+
+  const activeSinceDate = useMemo(() => {
+    if (!skill?.mentor?.created_at) return 'Recent'
+    return new Date(skill.mentor.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+  }, [skill])
 
   if (isLoading) return (
     <div className="max-w-7xl mx-auto px-6 py-12 flex items-center justify-center min-h-[60vh]">
@@ -81,7 +83,6 @@ export default function SkillDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,380px] gap-12 items-start">
-        {/* LEFT COLUMN */}
         <div className="space-y-12">
           <section>
              <div className="mb-4 flex flex-wrap gap-2">
@@ -141,7 +142,6 @@ export default function SkillDetail() {
           </section>
         </div>
 
-        {/* RIGHT COLUMN — Sticky Card */}
         <div className="sticky top-24 space-y-8">
            <Card className="p-10 border-none shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2 group-hover:bg-indigo-100 transition-colors" />
@@ -160,7 +160,7 @@ export default function SkillDetail() {
                        <span className={`text-xs font-black ${canAfford ? 'text-emerald-500' : 'text-rose-500'}`}>{profile?.karma_balance} Karma</span>
                     </div>
                     <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                       <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (profile?.karma_balance / skill.karma_cost) * 100)}%` }} className={`h-full ${canAfford ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                       <div style={{ width: `${Math.min(100, ((profile?.karma_balance || 0) / (skill.karma_cost || 1)) * 100)}%` }} className={`h-full ${canAfford ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                     </div>
                  </div>
 
@@ -184,7 +184,6 @@ export default function SkillDetail() {
               </div>
            </Card>
 
-           {/* MENTOR CARD */}
            <Card className="p-8 border-none shadow-xl bg-slate-900 text-white relative">
               <Link to={`/profile/${skill.mentor_id}`} className="flex items-center gap-5 group">
                 <Avatar size="lg" src={skill.mentor?.avatar_url} name={skill.mentor?.full_name} className="border-indigo-500/30" />
@@ -203,7 +202,7 @@ export default function SkillDetail() {
                  </div>
                  <div className="flex items-center gap-3 text-slate-400 text-sm font-medium">
                     <Calendar size={18} className="text-indigo-500" />
-                    <span>Active since {new Date(skill.mentor?.created_at || Date.now()).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
+                    <span>Active since {activeSinceDate}</span>
                  </div>
               </div>
               <Button onClick={() => navigate(`/chat`)} variant="ghost" className="w-full mt-8 bg-white/5 text-white hover:bg-white/10 uppercase font-black text-xs tracking-widest h-14">
