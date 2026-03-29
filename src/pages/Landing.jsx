@@ -106,6 +106,26 @@ export default function Landing() {
             </button>
           </motion.div>
 
+          {/* New Live Feed Simulation for density */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.4 }}
+            className="hidden md:flex items-center justify-center gap-4 mb-16"
+          >
+            <div className="flex -space-x-3">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0f172a] bg-slate-800 flex items-center justify-center overflow-hidden">
+                   <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i * 123}`} alt="user" />
+                </div>
+              ))}
+            </div>
+            <div className="text-xs font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-2 animate-pulse" />
+              12 Swaps active now
+            </div>
+          </motion.div>
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -115,10 +135,12 @@ export default function Landing() {
             Trusted by students across Northvale Institute, Deccan Engineering, Vistara College & 2 more partner campuses
           </motion.p>
 
-          <div className="flex flex-wrap items-center justify-center gap-6">
-            <FloatingChip icon={Users} value="2,400+" label="Students" delay={0} />
-            <FloatingChip icon={Zap} value="840" label="Skill Swaps" delay={0.2} />
-            <FloatingChip icon={BookOpen} value="1,200+" label="Resources" delay={0.4} />
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
+            <FloatingChip icon={Users} value="2,400+" label="Verified Students" delay={0} />
+            <FloatingChip icon={Zap} value="840" label="Active Skill Swaps" delay={0.1} />
+            <FloatingChip icon={BookOpen} value="1,200+" label="Vault Resources" delay={0.2} />
+            <FloatingChip icon={Globe} value="5" label="Nexus Nodes" delay={0.3} />
+            <FloatingChip icon={ShieldCheck} value="98%" label="Integrity Score" delay={0.4} />
           </div>
         </div>
       </section>

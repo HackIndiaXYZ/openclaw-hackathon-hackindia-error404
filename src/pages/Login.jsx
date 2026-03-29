@@ -109,7 +109,7 @@ export default function Login() {
           full_name: user.displayName || 'EduSync Peer',
           role: 'student',
           onboarding_completed: false,
-          karma_balance: 0
+          karma_balance: 100 // Updated +100 Karma on signup as per plan
         })
         navigate('/onboarding')
       } else if (!profile.onboarding_completed) {
