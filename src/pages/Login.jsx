@@ -119,7 +119,7 @@ export default function Login() {
         navigate(redirectPath)
       }
       
-      toast.success(`Identity Verified: ${user.email}`)
+      toast.success(`Identity Verified: ${user.email || 'Welcome to the Nexus'}`)
     } catch (error) {
       toast.error(error.message)
     } finally {

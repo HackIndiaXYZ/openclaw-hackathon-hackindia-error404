@@ -66,6 +66,11 @@ export default function Onboarding() {
   }
 
   const onFinish = async (data) => {
+    if (!user?.uid) {
+      toast.error('Authentication error. Please log in again.')
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const { error } = await supabase
@@ -80,7 +85,7 @@ export default function Onboarding() {
           onboarding_completed: true,
           karma_balance: 100 // Starting bonus
         })
-        .eq('id', user.id)
+        .eq('id', user.uid)
 
       if (error) throw error
 
