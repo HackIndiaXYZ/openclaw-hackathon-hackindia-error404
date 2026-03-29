@@ -112,10 +112,11 @@ export default function Login() {
           karma_balance: 100 // Updated +100 Karma on signup as per plan
         })
         navigate('/onboarding')
-      } else if (!profile.onboarding_completed) {
+      } else if (!profile.onboarding_completed && profile.role !== 'admin') {
         navigate('/onboarding')
       } else {
-        navigate('/dashboard')
+        const redirectPath = profile.role === 'admin' ? '/admin' : '/dashboard'
+        navigate(redirectPath)
       }
       
       toast.success(`Identity Verified: ${user.email}`)

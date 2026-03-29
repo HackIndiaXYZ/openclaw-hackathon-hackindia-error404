@@ -6,6 +6,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import RootLayout from './components/layout/RootLayout'
+import AdminLayout from './components/layout/AdminLayout'
 import Spinner from './components/ui/Spinner'
 
 const Landing      = lazy(() => import('./pages/Landing'))
@@ -78,10 +79,15 @@ export default function App() {
             {/* ADMIN — auth + admin role */}
             <Route path="/admin" element={
               <ProtectedRoute requireRole="admin">
-                <RootLayout />
+                <AdminLayout />
               </ProtectedRoute>
             }>
               <Route index element={<Admin />} />
+              <Route path="moderation" element={<Admin />} />
+              <Route path="users" element={<Admin />} />
+              <Route path="health" element={<Admin />} />
+              <Route path="vault" element={<Admin />} />
+              <Route path="settings" element={<Admin />} />
             </Route>
 
             {/* FALLBACKS */}

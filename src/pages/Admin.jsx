@@ -26,8 +26,8 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] p-6 lg:p-10 font-sans">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-6 lg:p-12 font-sans bg-transparent">
+      <div className="max-w-7xl">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>

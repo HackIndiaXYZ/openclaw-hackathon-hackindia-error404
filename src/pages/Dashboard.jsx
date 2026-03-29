@@ -8,9 +8,11 @@ import {
   TrendingUp, Users, Search, Rocket
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
-import { MOCK_SKILLS } from '../data/mockData'
+import { MOCK_SKILLS, MOCK_RESOURCES } from '../data/mockData'
+import { getRecommendations } from '../lib/gemini'
 import Button from '../components/ui/Button'
 import Avatar from '../components/ui/Avatar'
+import Spinner from '../components/ui/Spinner'
 
 // Animated Count Component
 const Counter = ({ value, duration = 2 }) => {
@@ -46,6 +48,89 @@ const StatCard = ({ icon: Icon, label, value, color, delay, suffix = "" }) => (
     </div>
   </motion.div>
 )
+
+const AIRecommendations = ({ profile }) => {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    async function fetchRecs() {
+      if (!profile) return
+      setLoading(true)
+      try {
+        const result = await getRecommendations(profile, MOCK_SKILLS, MOCK_RESOURCES)
+        setData(result)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchRecs()
+  }, [profile])
+
+  if (loading) return (
+    <div className="bg-slate-900 rounded-[2.5rem] p-10 flex flex-col items-center justify-center min-h-[200px] border border-white/10 shadow-2xl relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent animate-pulse" />
+      <Spinner />
+      <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-4">Syncing with Nexus Neural Link...</p>
+    </div>
+  )
+
+  if (!data || data.error) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="bg-slate-900 rounded-[2.5rem] p-10 shadow-2xl shadow-indigo-200 border border-white/10 relative overflow-hidden group"
+    >
+      <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/10 blur-[80px] rounded-full group-hover:bg-indigo-600/20 transition-all" />
+      
+      <div className="flex items-center gap-4 mb-8 relative z-10">
+        <div className="w-12 h-12 bg-white text-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
+          <Sparkles size={24} />
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-white font-outfit uppercase tracking-tighter">AI Pulse</h2>
+          <div className="flex items-center gap-1.5 text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-none mt-1">
+             Gemini 1.5 Analysis • Instant Matches
+          </div>
+        </div>
+      </div>
+
+      <p className="text-slate-300 italic font-medium text-lg leading-relaxed mb-10 relative z-10">
+        "{data.brief_insight}"
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+        {data.recommendations.map((rec, idx) => {
+          const item = rec.type === 'skill' 
+            ? MOCK_SKILLS.find(s => s.id === rec.id) || MOCK_SKILLS[0]
+            : MOCK_RESOURCES.find(r => r.id === rec.id) || MOCK_RESOURCES[0]
+          
+          return (
+            <div key={idx} className="bg-white/5 border border-white/5 p-6 rounded-3xl hover:bg-white/10 transition-all flex flex-col justify-between group/item">
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${rec.type === 'skill' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                    {rec.type}
+                  </span>
+                </div>
+                <h4 className="text-lg font-black text-white leading-tight mb-2 font-outfit truncate">{item.title}</h4>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">{rec.reason}</p>
+              </div>
+              <Link to={rec.type === 'skill' ? `/explore` : '/vault'} className="mt-6 flex items-center justify-between text-[10px] font-black text-white uppercase tracking-widest group-hover/item:text-indigo-400 transition-colors">
+                {rec.type === 'skill' ? 'Connect with Mentor' : 'Unlock Now'}
+                <ArrowRight size={14} className="group-hover/item:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          )
+        })}
+      </div>
+    </motion.div>
+  )
+}
 
 export default function Dashboard() {
   const { profile } = useAuthStore()
@@ -138,7 +223,9 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="space-y-8">
+            <AIRecommendations profile={profile} />
+
+            <div className="space-y-8 mt-10">
               {stats.activeSwaps === 0 ? (
                 <div className="text-center py-10">
                   <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-slate-300">
