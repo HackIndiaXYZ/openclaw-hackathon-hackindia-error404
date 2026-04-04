@@ -39,10 +39,10 @@ export default function Landing() {
         {/* Top Navbar */}
         <nav className="absolute top-0 left-0 w-full p-6 md:p-10 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <span className="text-white font-black text-xl leading-none">E</span>
+            <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/20">
+              <span className="text-white font-black text-xl leading-none">C</span>
             </div>
-            <span className="text-white font-black text-2xl tracking-tighter">EduSync</span>
+            <span className="text-white font-black text-2xl tracking-tighter">CyberSentinel</span>
           </div>
           <Link to="/login" className="px-6 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-semibold">
             Sign In
@@ -55,9 +55,9 @@ export default function Landing() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 bg-indigo-900/50 border border-indigo-500/30 rounded-full px-4 py-1.5 mb-8"
+            className="inline-flex items-center gap-2 bg-cyan-900/50 border border-cyan-500/30 rounded-full px-4 py-1.5 mb-8"
           >
-            <span className="text-indigo-300 text-sm font-medium tracking-wide">🎓 Built for Indian University Students</span>
+            <span className="text-cyan-300 text-sm font-medium tracking-wide">🛡️ Automated Cybersecurity Compliance Engine</span>
           </motion.div>
 
           <motion.h1
@@ -66,8 +66,8 @@ export default function Landing() {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[1.1] tracking-tight mb-6 font-outfit"
           >
-            Your Campus Has<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">10,000 Brilliant Minds.</span>
+            Your Infrastructure Has<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">10,000 Edge Vectors.</span>
           </motion.h1>
 
           <motion.p
@@ -76,7 +76,7 @@ export default function Landing() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-xl md:text-2xl text-indigo-200 mb-6 font-medium"
           >
-            You just haven't met the right one yet.
+            You just haven't hardened the right ones yet.
           </motion.p>
 
           <motion.p
@@ -85,7 +85,7 @@ export default function Landing() {
             transition={{ duration: 0.6, delay: 0.45 }}
             className="text-lg text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed"
           >
-            EduSync connects students across campuses to swap skills, share knowledge, and grow together — powered by Karma, not cash.
+            CyberSentinel orchestrates automated audits, scans for vulnerabilities, and ensures compliance across your entire cloud estate — powered by AI-driven triage.
           </motion.p>
 
           <motion.div
@@ -94,8 +94,8 @@ export default function Landing() {
             transition={{ duration: 0.6, delay: 0.6 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
           >
-            <Link to="/login" className="group w-full sm:w-auto px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-indigo-600/20 active:scale-95 flex items-center justify-center gap-2">
-              Get Started Free
+            <Link to="/login" className="group w-full sm:w-auto px-10 py-5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-cyan-600/20 active:scale-95 flex items-center justify-center gap-2">
+              Launch Audit Console
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <button 
@@ -120,9 +120,9 @@ export default function Landing() {
                 </div>
               ))}
             </div>
-            <div className="text-xs font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+            <div className="text-xs font-black text-cyan-400 uppercase tracking-widest bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-2 animate-pulse" />
-              12 Swaps active now
+              12 Scans active right now
             </div>
           </motion.div>
 
@@ -136,11 +136,11 @@ export default function Landing() {
           </motion.p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
-            <FloatingChip icon={Users} value="2,400+" label="Verified Students" delay={0} />
-            <FloatingChip icon={Zap} value="840" label="Active Skill Swaps" delay={0.1} />
-            <FloatingChip icon={BookOpen} value="1,200+" label="Vault Resources" delay={0.2} />
-            <FloatingChip icon={Globe} value="5" label="Nexus Nodes" delay={0.3} />
-            <FloatingChip icon={ShieldCheck} value="98%" label="Integrity Score" delay={0.4} />
+            <FloatingChip icon={Users} value="2,400+" label="Hardened Nodes" delay={0} />
+            <FloatingChip icon={Zap} value="840" label="Vulnerabilities Patched" delay={0.1} />
+            <FloatingChip icon={BookOpen} value="1,200+" label="Audit Reports" delay={0.2} />
+            <FloatingChip icon={Globe} value="5" label="Global Clusters" delay={0.3} />
+            <FloatingChip icon={ShieldCheck} value="98%" label="Compliance Score" delay={0.4} />
           </div>
         </div>
       </section>
