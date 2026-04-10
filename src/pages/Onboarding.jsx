@@ -52,6 +52,7 @@ export default function Onboarding() {
     setStep(s => s + 1)
   }
 
+
   const prevStep = () => {
     setDirection(-1)
     setStep(s => s - 1)
