@@ -9,6 +9,7 @@ import {
   Zap, Star, Rocket, Plus, X, Award
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { firebaseUidToUuid } from '../utils/uuidHelpers'
 import { useAuthStore } from '../stores/authStore'
 import { MOCK_CAMPUSES } from '../data/mockData'
 import { toast } from 'sonner'
@@ -21,7 +22,6 @@ const SKILL_SUGGESTIONS = [
   'VLSI', 'Embedded Systems', 'Robotics', 'ROS2', 'Calculus', 'Physics',
   'Organic Chemistry', 'Economics', 'Data Science', 'Git & DevOps'
 ]
-
 export default function Onboarding() {
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState(0)
@@ -80,7 +80,7 @@ export default function Onboarding() {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user.uid,
+          id: firebaseUidToUuid(user.uid),
           full_name: data.fullName,
           department: data.department,
           year_of_study: parseInt(data.yearOfStudy, 10),
