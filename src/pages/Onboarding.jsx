@@ -75,23 +75,24 @@ export default function Onboarding() {
         navigate('/login')
         return
       }
-
       const { error } = await supabase
         .from('profiles')
         .upsert({
+          id: user.uid,
           full_name: data.fullName,
-                    id: user.uid,
           department: data.department,
-          year_of_study: parseInt(data.yearOfStudy),
+          year_of_study: parseInt(data.yearOfStudy, 10),
           bio: data.bio,
           learning_goals: selectedWantLearn,
           teaching_skills: selectedCanTeach,
           onboarding_completed: true,
-          karma_balance: 100 // Starting bonus
+          karma_balance: 100
         })
-        .eq('id', user.uid)
+
       if (error) throw error
-      confetti({
+        
+      
+  confetti({
         particleCount: 150,
         spread: 70,
         origin: { y: 0.6 },
@@ -110,7 +111,7 @@ export default function Onboarding() {
     } catch (err) {
       toast.error(err.message)
       setIsSubmitting(false)
-
+  }
   return (
     <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Background Glow */}
