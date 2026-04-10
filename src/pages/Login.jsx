@@ -60,8 +60,7 @@ export default function Login() {
             karma_balance: 0
           })
 
-        if (profileError) throw profileError
-        
+                if (profileError) console.warn('Profile creation failed:', profileError.message)
         toast.success(`Welcome to the Nexus, ${data.fullName}!`)
         navigate('/onboarding')
       } else {
