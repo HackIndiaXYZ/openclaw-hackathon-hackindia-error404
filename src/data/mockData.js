@@ -1,9 +1,9 @@
 export const MOCK_CAMPUSES = [
-  { id: '1', name: 'Northvale Institute of Technology',       short_code: 'NIT-N' },
-  { id: '2', name: 'Deccan Engineering University',           short_code: 'DEU'   },
-  { id: '3', name: 'Vistara College of Science & Tech',       short_code: 'VCST'  },
-  { id: '4', name: 'Indravali Technical University',          short_code: 'ITU'   },
-  { id: '5', name: 'Sahyadri Institute of Advanced Studies',  short_code: 'SIAS'  },
+  { id: '882a6fbd-ff62-430c-8f4f-6d9b0a1d4b68', name: 'Northvale Institute of Technology',       short_code: 'NIT-N' },
+  { id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', name: 'Deccan Engineering University',           short_code: 'DEU'   },
+  { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Vistara College of Science & Tech',       short_code: 'VCST'  },
+  { id: '6ba7b810-9dad-11d1-80b4-00c04fd430c8', name: 'Indravali Technical University',          short_code: 'ITU'   },
+  { id: '6ba7b811-9dad-11d1-80b4-00c04fd430c8', name: 'Sahyadri Institute of Advanced Studies',  short_code: 'SIAS'  },
 ]
 
 export const MOCK_SKILLS = [

@@ -5,7 +5,7 @@ import {
   Zap, Star, BookOpen, Building2, 
   CheckCircle2, ArrowRight, MessageSquare, 
   Bell, LayoutDashboard, Compass, ShieldCheck,
-  TrendingUp, Users, Search, Rocket
+  TrendingUp, Users, Search, Rocket, Sparkles, Shield
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { MOCK_SKILLS, MOCK_RESOURCES } from '../data/mockData'
@@ -141,6 +141,7 @@ export default function Dashboard() {
   const { data: swapCount = 0 } = useQuery({
     queryKey: ['active-swaps', profile?.id],
     queryFn: async () => {
+      if (!profile?.id) return 0
       const { count } = await supabase
         .from('skill_requests')
         .select('*', { count: 'exact', head: true })
@@ -153,6 +154,7 @@ export default function Dashboard() {
   const { data: resourceCount = 0 } = useQuery({
     queryKey: ['user-resources', profile?.id],
     queryFn: async () => {
+      if (!profile?.id) return 0
       const { count } = await supabase
         .from('resources')
         .select('*', { count: 'exact', head: true })
